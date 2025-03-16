@@ -2,14 +2,14 @@ import React from 'react'
 import Image from 'next/image'
 import home from '../../../assets/images/home.webp'
 import about from '../../../assets/images/about.webp'
-import Categories from '@/components/Categories'
 import ShowBlogs from '@/components/ShowBlogs'
 import CustomSearch from '@/components/CustomSearch'
+import About from '@/components/About'
 
 const page = () => {
   return (
     <div>
-      <div className="hero min-h-screen px-20">
+      <div className="hero min-h-screen">
         <div className="grid grid-cols-12">
           <div className='col-span-6 flex flex-col justify-center pr-10'>
             <h1 className="text-5xl font-bold text-darkPurple">Welcome to StoryStream</h1>
@@ -40,7 +40,7 @@ const page = () => {
         </section>
       </div>
       <div>
-        <Categories />
+        <About/>
       </div>
     </div>
   )
