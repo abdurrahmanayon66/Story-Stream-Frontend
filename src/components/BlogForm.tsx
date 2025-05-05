@@ -8,14 +8,34 @@ import TextAlign from "@tiptap/extension-text-align";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import MenuBar from "../components/MenuBar";
+import CreatableSelect from "react-select/creatable";
 
 const BlogForm: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [title, setTitle] = useState<string>("");
-  const [genre, setGenre] = useState<string>("Fashion");
+  const [genres, setGenres] = useState<{ value: string; label: string }[]>([]);
   const [content, setContent] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Predefined genre options for autocomplete
+  const genreOptions = [
+    { value: "Fashion", label: "Fashion" },
+    { value: "Technology", label: "Technology" },
+    { value: "Food", label: "Food" },
+    { value: "Travel", label: "Travel" },
+    { value: "Lifestyle", label: "Lifestyle" },
+    { value: "Health", label: "Health" },
+    { value: "Fitness", label: "Fitness" },
+    { value: "Beauty", label: "Beauty" },
+    { value: "Gaming", label: "Gaming" },
+    { value: "Education", label: "Education" },
+    { value: "Business", label: "Business" },
+    { value: "Finance", label: "Finance" },
+    { value: "Art", label: "Art" },
+    { value: "Photography", label: "Photography" },
+    { value: "Music", label: "Music" },
+  ];
 
   const editor = useEditor({
     extensions: [
@@ -40,7 +60,6 @@ const BlogForm: React.FC = () => {
     if (file && imageRef.current) {
       const imageUrl = URL.createObjectURL(file);
       imageRef.current.src = imageUrl;
-      // Removed the automatic insertion into editor
     }
   };
 
@@ -49,27 +68,25 @@ const BlogForm: React.FC = () => {
     setIsSubmitting(true);
 
     const formData = new FormData();
-    formData.append('title', title);
-    formData.append('genre', genre);
-    formData.append('content', content);
+    formData.append("title", title);
+    formData.append("genres", JSON.stringify(genres.map((g) => g.value))); // Send genres as JSON array
+    formData.append("content", content);
 
     if (fileInputRef.current?.files?.[0]) {
-      formData.append('featuredImage', fileInputRef.current.files[0]);
+      formData.append("featuredImage", fileInputRef.current.files[0]);
     }
 
     try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
+      const response = await fetch("/api/posts", {
+        method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to submit form');
+      if (!response.ok) throw new Error("Failed to submit form");
       const result = await response.json();
-      console.log('Success:', result);
-      // Handle success (redirect, show message, etc.)
+      console.log("Success:", result);
     } catch (error) {
-      console.error('Error:', error);
-      // Handle error
+      console.error("Error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -97,19 +114,47 @@ const BlogForm: React.FC = () => {
             />
 
             <label className="block mt-4 text-purple-900 font-medium">
-              Select the genre
+              Select or add genres
             </label>
-            <select 
-              className="w-full p-2 mt-2 border rounded"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+            <CreatableSelect
+              isMulti
+              options={genreOptions}
+              value={genres}
+              onChange={(newValue) => setGenres(newValue as { value: string; label: string }[])}
+              placeholder="Type or select genres..."
+              className="mt-2"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderRadius: "0.25rem",
+                  borderColor: "#d1d5db",
+                  backgroundColor: "#fff",
+                  padding: "0.25rem",
+                }),
+                multiValue: (base) => ({
+                  ...base,
+                  backgroundColor: "#d8b4fe", // Purple-300
+                  borderRadius: "0.5rem",
+                }),
+                multiValueLabel: (base) => ({
+                  ...base,
+                  color: "#4c1d95", // Purple-900
+                }),
+                multiValueRemove: (base) => ({
+                  ...base,
+                  color: "#4c1d95",
+                  ":hover": {
+                    backgroundColor: "#a78bfa", // Purple-400
+                    color: "#fff",
+                  },
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  color: "#9ca3af",
+                }),
+              }}
               required
-            >
-              <option>Fashion</option>
-              <option>Technology</option>
-              <option>Food</option>
-              <option>Travel</option>
-            </select>
+            />
 
             <label className="block mt-4 text-purple-900 font-medium">
               Enter Your Content
@@ -145,14 +190,14 @@ const BlogForm: React.FC = () => {
             />
           </div>
         </div>
-        
+
         <div className="mt-6 text-right">
-          <button 
+          <button
             type="submit"
             disabled={isSubmitting}
             className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg disabled:opacity-50"
           >
-            {isSubmitting ? 'Saving...' : 'Save'}
+            {isSubmitting ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
