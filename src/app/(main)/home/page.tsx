@@ -9,8 +9,8 @@ import About from '@/components/About'
 const page = () => {
   return (
     <div>
-      <div className="hero min-h-screen">
-        <div className="grid grid-cols-12">
+      <div className="hero my-24">
+        <div className="grid grid-cols-12 items-center">
           <div className='col-span-6 flex flex-col justify-center pr-10'>
             <h1 className="text-5xl font-bold text-darkPurple">Welcome to StoryStream</h1>
             <p className="py-6 text-xl text-customGray font-semibold">Share your blogs, explore new narratives, and connect with a community of passionate writers and readers. Your journey begins here!</p>
@@ -26,9 +26,9 @@ const page = () => {
         </div>
       </div>
       <div>
-        <section className='px-16 h-[260vh]'>
-          <ShowBlogs />
-        </section>
+        <About/>
+      </div>
+       <div>
         <section className='flex justify-between px-16'>
           <div className='flex flex-col gap-y-5 justify-center w-[50%] pl-10'>
             <p className='text-darkPurple font-semibold text-6xl text-left'>Resources and insights</p>
@@ -38,9 +38,6 @@ const page = () => {
             <Image className='w-full' src={about} alt="Resources and insights" />
           </div>
         </section>
-      </div>
-      <div>
-        <About/>
       </div>
     </div>
   )

@@ -1,7 +1,10 @@
 'use client';
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Cookies from 'js-cookie';
 
 interface LoginFormProps {
   className?: string;
@@ -10,50 +13,94 @@ interface LoginFormProps {
 export default function LoginForm({ className }: LoginFormProps) {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Store tokens as cookies
+  const storeTokens = async (session: any) => {
+    console.log('storeTokens called');
+
+    if (!session) {
+      console.error('No session found');
+      return false;
+    }
+
+    console.log('📦 Full Session:', session);
+
+    const accessToken = session?.accessToken ?? session?.graphqlResult?.accessToken;
+    const refreshToken = session?.refreshToken ?? session?.graphqlResult?.refreshToken;
+
+    if (accessToken && refreshToken) {
+      // Set cookies with js-cookie (non-HTTP-only by default)
+      Cookies.set('accessToken', accessToken, { expires: 1, secure: true, sameSite: 'Strict' });
+      Cookies.set('refreshToken', refreshToken, { expires: 7, secure: true, sameSite: 'Strict' });
+      console.log('✅ Access Token stored in cookie:', accessToken);
+      console.log('✅ Refresh Token stored in cookie:', refreshToken);
+      return true;
+    }
+
+    console.warn('⚠️ Tokens not found in session');
+    return false;
+  };
+
+  // Effect to store tokens when session updates
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      console.log('Session updated:', session);
+      storeTokens(session).then((success) => {
+        if (success) {
+          toast.success('Login successful! Redirecting...');
+          router.push('/home');
+        } else {
+          toast.error('Failed to retrieve authentication tokens');
+        }
+      });
+    }
+  }, [session, status]);
 
   const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    console.log('Credentials submit started');
 
-    const result = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+      console.log('signIn result:', result);
 
-    setLoading(false);
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      router.push('/home');
+      if (result?.error) {
+        console.error('signIn error:', result.error);
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.message || 'Login failed. Please try again.');
+      setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setError('');
     setLoading(true);
+    console.log('Google sign-in started');
 
     try {
-      const result = await signIn('google', { 
+      const result = await signIn('google', {
         redirect: false,
-        callbackUrl: '/home',
       });
+      console.log('signIn result:', result);
 
-      setLoading(false);
-      
       if (result?.error) {
-        setError(`Google sign-in failed: ${result.error}`);
-      } else {
-        router.push('/home');
+        console.error('signIn error:', result.error);
+        throw new Error(result.error);
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      toast.error(error.message || 'Google login failed. Please try again.');
       setLoading(false);
-      setError(`Exception during Google sign-in: ${err.message}`);
-      console.error('Google sign-in error:', err);
     }
   };
 
@@ -89,7 +136,6 @@ export default function LoginForm({ className }: LoginFormProps) {
             disabled={loading}
           />
         </div>
-        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400"
@@ -128,4 +174,4 @@ export default function LoginForm({ className }: LoginFormProps) {
       </div>
     </div>
   );
-}
+};
