@@ -11,8 +11,11 @@ const CURRENT_USER_QUERY = gql`
   query {
     currentUser {
       id
-      email
       username
+      email
+      image
+      profileImage
+      createdAt
     }
   }
 `;
@@ -27,6 +30,9 @@ const REFRESH_TOKEN_MUTATION = gql`
           id
           username
           email
+          image
+          profileImage
+          createdAt
         }
       }
       ... on AuthError {
@@ -39,8 +45,11 @@ const REFRESH_TOKEN_MUTATION = gql`
 
 interface User {
   id: number;
-  email: string;
   username: string;
+  email: string;
+  image: string | null;
+  profileImage: string | null;
+  createdAt: string;
 }
 
 interface GraphQLResponse {
@@ -62,15 +71,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   try {
     // Get cookies directly from the request
     const cookieStore = cookies();
-    const allCookies = cookieStore.getAll();
-    console.log('All cookies:', allCookies);
-
     const accessToken = cookieStore.get('accessToken')?.value;
     const refreshToken = cookieStore.get('refreshToken')?.value;
 
     console.log('Session Check - Cookies:', {
       accessToken: accessToken ? accessToken.substring(0, 10) + '...' : 'missing',
-      refreshToken: refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing'
+      refreshToken: refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing',
     });
 
     if (!accessToken) {
@@ -106,7 +112,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       result.data.currentUser === null
     ) {
       console.log('Session Check - Token invalid or unauthorized');
-      
+
       // If we have a refresh token, try to refresh
       if (refreshToken) {
         console.log('Attempting token refresh...');
@@ -122,11 +128,18 @@ export async function GET(request: Request): Promise<NextResponse> {
             isAuthenticated: true,
             accessToken: refreshData.accessToken,
             refreshToken: refreshData.refreshToken,
-            user: refreshData.user,
+            user: {
+              id: refreshData.user.id,
+              username: refreshData.user.username,
+              email: refreshData.user.email,
+              image: refreshData.user.image,
+              profileImage: refreshData.user.profileImage,
+              createdAt: refreshData.user.createdAt,
+            },
           }, { status: 200 });
         }
       }
-      
+
       return NextResponse.json({ isAuthenticated: false, error: 'Invalid or expired token' }, { status: 200 });
     }
 
@@ -139,10 +152,19 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     console.log('Session Check - Success, user authenticated:', result.data.currentUser);
-    return NextResponse.json(
-      { isAuthenticated: true, user: result.data.currentUser },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      isAuthenticated: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: result.data.currentUser.id,
+        username: result.data.currentUser.username,
+        email: result.data.currentUser.email,
+        image: result.data.currentUser.image,
+        profileImage: result.data.currentUser.profileImage,
+        createdAt: result.data.currentUser.createdAt,
+      },
+    }, { status: 200 });
   } catch (error) {
     console.error('Session Check - Error:', error);
     return NextResponse.json({ isAuthenticated: false }, { status: 200 });
@@ -151,12 +173,14 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    // Get refresh token from cookies instead of body
+    // Get refresh token from cookies
     const cookieStore = cookies();
     const refreshToken = cookieStore.get('refreshToken')?.value;
-    
-    console.log('Session Check POST - Refresh token from cookies:', 
-      refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing');
+
+    console.log(
+      'Session Check POST - Refresh token from cookies:',
+      refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing'
+    );
 
     if (!refreshToken) {
       console.log('Session Check POST - No refresh token cookie found');
@@ -176,12 +200,19 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ isAuthenticated: false, error: refreshData.message }, { status: 200 });
     }
 
-    // Return new tokens to the frontend
+    // Return new tokens and user data
     return NextResponse.json({
       isAuthenticated: true,
       accessToken: refreshData.accessToken,
       refreshToken: refreshData.refreshToken,
-      user: refreshData.user,
+      user: {
+        id: refreshData.user.id,
+        username: refreshData.user.username,
+        email: refreshData.user.email,
+        image: refreshData.user.image,
+        profileImage: refreshData.user.profileImage,
+        createdAt: refreshData.user.createdAt,
+      },
     }, { status: 200 });
   } catch (error) {
     console.error('Session Check POST - Error:', error);
