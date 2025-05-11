@@ -1,36 +1,38 @@
 import NextAuth, { NextAuthConfig } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import { JWT } from 'next-auth/jwt';
-import { DefaultSession } from 'next-auth';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
-import { setCookie } from 'cookies-next';
 
-// Extend Session and JWT types
-interface ExtendedSession extends DefaultSession {
-  user: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-  accessToken: string;
-  refreshToken: string;
+// 🔒 Custom NextAuth Type Augmentation (inline)
+declare module 'next-auth' {
+  interface Session {
+    accessToken?: string;
+    refreshToken?: string;
+    graphqlResult?: any;
+  }
+
+  interface User {
+    accessToken?: string;
+    refreshToken?: string;
+    graphqlResult?: any;
+  }
 }
 
-interface ExtendedJWT extends JWT {
-  id: string;
-  accessToken: string;
-  refreshToken: string;
+declare module 'next-auth/jwt' {
+  interface JWT {
+    accessToken?: string;
+    refreshToken?: string;
+    graphqlResult?: any;
+  }
 }
 
-// Apollo Client for backend GraphQL
+// Apollo Client setup
 const client = new ApolloClient({
   uri: process.env.NEXT_PUBLIC_API_URL,
   cache: new InMemoryCache(),
 });
 
-// GraphQL mutation for credentials login
+// GraphQL mutations
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
@@ -53,7 +55,6 @@ const LOGIN_MUTATION = gql`
   }
 `;
 
-// GraphQL mutation for Google OAuth login
 const OAUTH_LOGIN_MUTATION = gql`
   mutation OAuthLogin($input: OAuthInput!) {
     oauthLogin(input: $input) {
@@ -76,10 +77,7 @@ const OAUTH_LOGIN_MUTATION = gql`
   }
 `;
 
-// NextAuth configuration
 const authConfig: NextAuthConfig = {
-  debug: process.env.NODE_ENV === 'development',
-  secret: process.env.AUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -98,60 +96,30 @@ const authConfig: NextAuthConfig = {
           });
 
           const result = data.login;
-
           if (result.__typename === 'AuthError') {
             throw new Error(result.message);
           }
 
-          // Set client-side cookies (only accessToken and refreshToken)
-          const cookieOptions = {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax' as const,
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-          };
-
-          setCookie('auth.accessToken', result.accessToken, {
-            ...cookieOptions,
-            maxAge: 15 * 60, // 15 minutes
-          });
-          setCookie('auth.refreshToken', result.refreshToken, {
-            ...cookieOptions,
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-          });
-
           return {
-            id: result.user.id.toString(),
+            id: result.user.id,
             name: result.user.username,
             email: result.user.email,
             image: result.user.image || result.user.profileImage,
             accessToken: result.accessToken,
             refreshToken: result.refreshToken,
+            graphqlResult: result,
           };
         } catch (error) {
-          console.error('Credentials authorization error:', error);
-          throw new Error('Invalid credentials');
+          console.error('Auth error:', error);
+          return null;
         }
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: 'select_account',
-          access_type: 'offline',
-          response_type: 'code',
-        },
-      },
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  session: { strategy: 'jwt' },
-  pages: {
-    signIn: '/login',
-    error: '/auth/error',
-  },
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === 'google' && profile) {
@@ -170,63 +138,47 @@ const authConfig: NextAuthConfig = {
           });
 
           const result = data.oauthLogin;
-
           if (result.__typename === 'AuthError') {
             throw new Error(result.message);
           }
 
-          // Set client-side cookies (only accessToken and refreshToken)
-          const cookieOptions = {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax' as const,
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-          };
-
-          setCookie('auth.accessToken', result.accessToken, {
-            ...cookieOptions,
-            maxAge: 15 * 60, // 15 minutes
-          });
-          setCookie('auth.refreshToken', result.refreshToken, {
-            ...cookieOptions,
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-          });
-
           account.accessToken = result.accessToken;
           account.refreshToken = result.refreshToken;
-          account.userId = result.user.id.toString();
+          account.graphqlResult = result;
+
           return true;
         } catch (error) {
-          console.error('OAuth signIn error:', error);
+          console.error('Google OAuth error:', error);
           return false;
         }
       }
       return true;
     },
     async jwt({ token, user, account }) {
-      if (account && user) {
-        token.id = account.userId || user.id;
-        token.accessToken = account.accessToken || user.accessToken;
-        token.refreshToken = account.refreshToken || user.refreshToken;
+      if (user?.accessToken) {
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.graphqlResult = user.graphqlResult;
       }
-      return token as ExtendedJWT;
+      if (account?.accessToken) {
+        token.accessToken = account.accessToken;
+        token.refreshToken = account.refreshToken;
+        token.graphqlResult = account.graphqlResult;
+      }
+      return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id;
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;
-      return session as ExtendedSession;
+      session.graphqlResult = token.graphqlResult;
+      console.log('Session:', session);
+      return session;
     },
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith('/')) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return `${baseUrl}/home`;
-    },
+  },
+  pages: {
+    signIn: '/login',
   },
 };
 
-const authHandler = NextAuth(authConfig);
-
-export const GET = authHandler;
-export const POST = authHandler;
+const handler = NextAuth(authConfig);
+export { handler as GET, handler as POST };
