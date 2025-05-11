@@ -14,12 +14,17 @@ import { AiOutlineBell } from "react-icons/ai";
 
 interface User {
   id: number;
-  email: string;
   username: string;
+  email: string;
+  image: string | null; // Base64 string (e.g., data:image/jpeg;base64,...)
+  profileImage: string | null; // URL for Google users
+  createdAt: string;
 }
 
 interface SessionResponse {
   isAuthenticated: boolean;
+  accessToken?: string;
+  refreshToken?: string;
   user?: User;
 }
 
@@ -46,33 +51,36 @@ const Navbar: React.FC = () => {
     checkAuthStatus();
   }, []); // Empty dependency array = runs once on mount
 
+  // Determine profile picture source
+  const profilePictureSrc = user?.image || user?.profileImage || "https://github.com/shadcn.png";
+
   return (
     <div className="bg-lightPink flex py-4 rounded-md px-4 my-6 items-center mx-16 justify-between">
       <h1 className="text-3xl font-bold text-darkPurple">StoryStream</h1>
       <div className="flex items-center space-x-6">
         {isAuthenticated ? (
-          <div className="flex space-x-4">
+          <div className="flex space-x-4 items-center">
             <Link href="/explore">Explore</Link>
             <Link href="/post">Post</Link>
             <Link href="/analytics">Analytics</Link>
-            <button><AiOutlineBell size={24} /></button>
+            <button>
+              <AiOutlineBell size={24} />
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Image
                   alt="profile picture"
-                  src="https://github.com/shadcn.png"
+                  src={profilePictureSrc}
                   className="size-10 rounded-full ring-2 ring-purple-700"
-                  width={30}
-                  height={30}
+                  width={40}
+                  height={40}
                 />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.username || "My Account"}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-                <DropdownMenuItem>Team</DropdownMenuItem>
-                <DropdownMenuItem>Subscription</DropdownMenuItem>
+                <DropdownMenuItem>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
