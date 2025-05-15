@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { signOut } from 'next-auth/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,14 +11,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AiOutlineBell } from "react-icons/ai";
 
 interface User {
   id: number;
   username: string;
   email: string;
-  image: string | null; // Base64 string (e.g., data:image/jpeg;base64,...)
-  profileImage: string | null; // URL for Google users
+  image: string | null;
+  profileImage: string | null;
   createdAt: string;
 }
 
@@ -31,6 +33,7 @@ interface SessionResponse {
 const Navbar: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -49,9 +52,24 @@ const Navbar: React.FC = () => {
     };
 
     checkAuthStatus();
-  }, []); // Empty dependency array = runs once on mount
+  }, []);
 
-  // Determine profile picture source
+const handleLogout = async () => {
+  try {
+    await fetch("/api/logout", { method: "DELETE" });
+
+    document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    await signOut({ redirect: false });
+    router.push("/login");
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
+
+
+
   const profilePictureSrc = user?.image || user?.profileImage || "https://github.com/shadcn.png";
 
   return (
@@ -79,8 +97,10 @@ const Navbar: React.FC = () => {
               <DropdownMenuContent>
                 <DropdownMenuLabel>{user?.username || "My Account"}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
