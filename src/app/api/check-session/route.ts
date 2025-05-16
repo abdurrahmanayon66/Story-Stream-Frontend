@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
-import { cookies } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/utils/authConfig'; 
 
 const client = new ApolloClient({
   uri: process.env.NEXT_PUBLIC_API_URL,
@@ -69,20 +70,21 @@ interface GraphQLResponse {
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    // Get cookies directly from the request
-    const cookieStore = cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
-    const refreshToken = cookieStore.get('refreshToken')?.value;
+    // Get session from NextAuth
+    const session = await getServerSession(authConfig);
 
-    console.log('Session Check - Cookies:', {
-      accessToken: accessToken ? accessToken.substring(0, 10) + '...' : 'missing',
-      refreshToken: refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing',
+    console.log('Session Check - Session:', {
+      accessToken: session?.accessToken ? session.accessToken.substring(0, 10) + '...' : 'missing',
+      refreshToken: session?.refreshToken ? session.refreshToken.substring(0, 10) + '...' : 'missing',
     });
 
-    if (!accessToken) {
-      console.log('Session Check - No access token cookie found');
+    if (!session || !session.accessToken) {
+      console.log('Session Check - No session or access token found');
       return NextResponse.json({ isAuthenticated: false }, { status: 200 });
     }
+
+    const accessToken = session.accessToken;
+    const refreshToken = session.refreshToken;
 
     const tryCurrentUserQuery = async (token: string) => {
       console.log('Session Check - Querying currentUser with token:', token.substring(0, 10) + '...');
@@ -103,7 +105,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return result;
     };
 
-    // Try currentUser query with accessToken from cookie
+    // Try currentUser query with accessToken from session
     let result: GraphQLResponse = await tryCurrentUserQuery(accessToken);
 
     // Handle token expiration or invalid token
@@ -173,19 +175,20 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    // Get refresh token from cookies
-    const cookieStore = cookies();
-    const refreshToken = cookieStore.get('refreshToken')?.value;
+    // Get session from NextAuth
+    const session = await getServerSession(authConfig);
 
     console.log(
-      'Session Check POST - Refresh token from cookies:',
-      refreshToken ? refreshToken.substring(0, 10) + '...' : 'missing'
+      'Session Check POST - Refresh token from session:',
+      session?.refreshToken ? session.refreshToken.substring(0, 10) + '...' : 'missing'
     );
 
-    if (!refreshToken) {
-      console.log('Session Check POST - No refresh token cookie found');
+    if (!session || !session.refreshToken) {
+      console.log('Session Check POST - No session or refresh token found');
       return NextResponse.json({ isAuthenticated: false, error: 'No refresh token provided' }, { status: 200 });
     }
+
+    const refreshToken = session.refreshToken;
 
     const refreshResult = await client.mutate({
       mutation: REFRESH_TOKEN_MUTATION,

@@ -39,8 +39,7 @@ const Navbar: React.FC = () => {
     const checkAuthStatus = async () => {
       try {
         const response = await fetch("/api/check-session");
-        const data: SessionResponse = await response.json();
-        
+        const data: SessionResponse = await response.json(); 
         setIsAuthenticated(data.isAuthenticated);
         setUser(data.user || null);
         console.log("Auth check result:", data);
@@ -54,21 +53,18 @@ const Navbar: React.FC = () => {
     checkAuthStatus();
   }, []);
 
-const handleLogout = async () => {
-  try {
-    await fetch("/api/logout", { method: "DELETE" });
-
-    document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    await signOut({ redirect: false });
-    router.push("/login");
-  } catch (error) {
-    console.error("Logout failed:", error);
-  }
-};
-
-
+  const handleLogout = async () => {
+    try {
+      // Destroy the NextAuth session
+      await signOut({ redirect: false });
+      // Navigate to /auth
+      router.push("/auth");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Navigate to /auth even if signOut fails to ensure user is redirected
+      router.push("/auth");
+    }
+  };
 
   const profilePictureSrc = user?.image || user?.profileImage || "https://github.com/shadcn.png";
 
@@ -106,8 +102,8 @@ const handleLogout = async () => {
           </div>
         ) : (
           <div className="flex space-x-4">
-            <Link href="/login">Login</Link>
-            <Link href="/signup">Sign Up</Link>
+            <Link href="/auth">Login</Link>
+            <Link href="/auth/signup">Sign Up</Link>
           </div>
         )}
       </div>

@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Cookies from 'js-cookie';
 
 interface LoginFormProps {
   className?: string;
@@ -17,50 +15,16 @@ export default function LoginForm({ className }: LoginFormProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Store tokens as cookies
-  const storeTokens = async (session: any) => {
-    console.log('storeTokens called');
-
-    if (!session) {
-      console.error('No session found');
-      return false;
-    }
-
-    console.log('📦 Full Session:', session);
-
-    const accessToken = session?.accessToken ?? session?.graphqlResult?.accessToken;
-    const refreshToken = session?.refreshToken ?? session?.graphqlResult?.refreshToken;
-
-    if (accessToken && refreshToken) {
-      // Set cookies with js-cookie (non-HTTP-only by default)
-      Cookies.set('accessToken', accessToken, { expires: 1, secure: true, sameSite: 'Strict' });
-      Cookies.set('refreshToken', refreshToken, { expires: 7, secure: true, sameSite: 'Strict' });
-      console.log('✅ Access Token stored in cookie:', accessToken);
-      console.log('✅ Refresh Token stored in cookie:', refreshToken);
-      return true;
-    }
-
-    console.warn('⚠️ Tokens not found in session');
-    return false;
-  };
-
-  // Effect to store tokens when session updates
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      console.log('Session updated:', session);
-      storeTokens(session).then((success) => {
-        if (success) {
-          toast.success('Login successful! Redirecting...');
-          router.push('/home');
-        } else {
-          toast.error('Failed to retrieve authentication tokens');
-        }
-      });
+      toast.success('Login successful! Redirecting...');
+      router.push('/home');
     }
-  }, [session, status]);
+  }, [session, status, router]);
 
   const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     console.log('Credentials submit started');
 
@@ -73,10 +37,13 @@ export default function LoginForm({ className }: LoginFormProps) {
       console.log('signIn result:', result);
 
       if (result?.error) {
-        console.error('signIn error:', result.error);
         throw new Error(result.error);
       }
-    } catch (error) {
+
+      if (!result?.ok) {
+        throw new Error('Login failed: Invalid response from server');
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed. Please try again.');
       setLoading(false);
@@ -84,6 +51,7 @@ export default function LoginForm({ className }: LoginFormProps) {
   };
 
   const handleGoogleSignIn = async () => {
+    if (loading) return; // Prevent multiple clicks
     setLoading(true);
     console.log('Google sign-in started');
 
@@ -91,13 +59,15 @@ export default function LoginForm({ className }: LoginFormProps) {
       const result = await signIn('google', {
         redirect: false,
       });
-      console.log('signIn result:', result);
 
       if (result?.error) {
-        console.error('signIn error:', result.error);
         throw new Error(result.error);
       }
-    } catch (error) {
+
+      if (!result?.ok) {
+        throw new Error('Google login failed: Invalid response from server');
+      }
+    } catch (error: any) {
       console.error('Google sign-in error:', error);
       toast.error(error.message || 'Google login failed. Please try again.');
       setLoading(false);
@@ -158,7 +128,7 @@ export default function LoginForm({ className }: LoginFormProps) {
             />
             <path
               fill="#34A853"
-              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36  personally identifiable information redacted-17.65z"
             />
             <path
               fill="#FBBC05"
@@ -174,4 +144,4 @@ export default function LoginForm({ className }: LoginFormProps) {
       </div>
     </div>
   );
-};
+}
