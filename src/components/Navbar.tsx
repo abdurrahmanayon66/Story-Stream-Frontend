@@ -69,7 +69,7 @@ const Navbar: React.FC = () => {
   const profilePictureSrc = user?.image || user?.profileImage || "https://github.com/shadcn.png";
 
   return (
-    <div className="bg-ExtraLightPurple flex py-4 rounded-md px-4 my-6 items-center mx-24 justify-between">
+    <div className="bg-extraLightPurple flex py-4 rounded-md px-4 my-6 items-center mx-24 justify-between">
       <h1 className="text-3xl font-bold text-darkPurple">StoryStream</h1>
       <div className="flex items-center space-x-6">
         {isAuthenticated ? (

@@ -17,15 +17,15 @@ export default function RootLayout({
         {children}
         </Providers>
         <ToastContainer 
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={true}
           newestOnTop={false}
           closeOnClick
           rtl={false}
           pauseOnFocusLoss
-          draggable
-          pauseOnHover
+          draggable={false}
+          pauseOnHover={false}
           theme="light"
         />
       </body>
