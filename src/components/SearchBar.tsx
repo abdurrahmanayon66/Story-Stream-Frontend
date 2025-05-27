@@ -7,7 +7,7 @@ interface SearchBarProps {
   onSearch: (query: string) => void
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ placeholder = "Search Posts...", onSearch }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ placeholder = "Search Posts", onSearch }) => {
   const [input, setInput] = useState<string>("")
   const [active, setActive] = useState<boolean>(false)
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null)
