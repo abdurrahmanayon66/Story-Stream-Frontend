@@ -11,7 +11,6 @@ export default function AuthPage() {
     setIsLogin(!isLogin);
   };
 
-  // Animation variants for sliding
   const imageVariants = {
     left: { x: '0%', transition: { duration: 0.5, ease: 'easeInOut' } },
     right: { x: '100%', transition: { duration: 0.5, ease: 'easeInOut' } },
