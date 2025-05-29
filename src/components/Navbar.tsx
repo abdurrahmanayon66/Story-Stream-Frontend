@@ -42,7 +42,6 @@ const Navbar: React.FC = () => {
         const data: SessionResponse = await response.json(); 
         setIsAuthenticated(data.isAuthenticated);
         setUser(data.user || null);
-        console.log("Auth check result:", data);
       } catch (error) {
         console.error("Auth check failed:", error);
         setIsAuthenticated(false);
