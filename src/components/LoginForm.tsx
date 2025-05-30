@@ -21,7 +21,6 @@ export default function LoginForm({ className }: LoginFormProps) {
   setLoading(true);
 
   try {
-    // Clear any existing session before signing in
     await signOut({ redirect: false });
     
     // Small delay to ensure session is fully cleared

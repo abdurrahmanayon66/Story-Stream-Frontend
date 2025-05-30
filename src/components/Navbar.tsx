@@ -97,9 +97,9 @@ const Navbar: React.FC = () => {
       <div className="flex items-center space-x-6">
         {isAuthenticated ? (
           <div className="flex space-x-4 items-center">
-            <Link href="/explore">Explore</Link>
-            <Link href="/post">Post</Link>
-            <Link href="/analytics">Analytics</Link>
+            <Link href="/home">Home</Link>
+            <Link href="/my-feed">My Feed</Link>
+            <Link href="/create-blog">Post Blog</Link>
             <button>
               <AiOutlineBell size={24} />
             </button>
