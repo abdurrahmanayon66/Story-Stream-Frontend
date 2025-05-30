@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { signOut } from 'next-auth/react';
+import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +18,8 @@ interface User {
   id: number;
   username: string;
   email: string;
-  image: string | null;
-  profileImage: string | null;
+  image: string | null;         
+  profileImage: string | null;   
   createdAt: string;
 }
 
@@ -39,10 +39,9 @@ const Navbar: React.FC = () => {
     const checkAuthStatus = async () => {
       try {
         const response = await fetch("/api/check-session");
-        const data: SessionResponse = await response.json(); 
+        const data: SessionResponse = await response.json();
         setIsAuthenticated(data.isAuthenticated);
         setUser(data.user || null);
-        console.log("Auth check result:", data);
       } catch (error) {
         console.error("Auth check failed:", error);
         setIsAuthenticated(false);
@@ -55,18 +54,42 @@ const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      // Destroy the NextAuth session
       await signOut({ redirect: false });
-      // Navigate to /auth
       router.push("/auth");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Navigate to /auth even if signOut fails to ensure user is redirected
       router.push("/auth");
     }
   };
 
-  const profilePictureSrc = user?.image || user?.profileImage || "https://github.com/shadcn.png";
+  const isDataUrl = (src?: string | null) => {
+    return !!src && src.startsWith("data:image/");
+  };
+
+  const isRawBase64 = (src?: string | null) => {
+    if (!src) return false;
+    return /^[A-Za-z0-9+/=]+$/.test(src);
+  };
+
+  const getProfilePictureSrc = (): string => {
+    if (user?.image) {
+      if (isDataUrl(user.image)) {
+        return user.image;
+      }
+      if (isRawBase64(user.image)) {
+        return `data:image/jpeg;base64,${user.image}`;
+      }
+      return user.image;
+    }
+
+    if (user?.profileImage) {
+      return user.profileImage;
+    }
+
+    return "https://github.com/shadcn.png";
+  };
+
+  const profilePictureSrc = getProfilePictureSrc();
 
   return (
     <div className="bg-extraLightPurple flex py-4 rounded-md px-4 my-6 items-center mx-24 justify-between">
@@ -82,21 +105,33 @@ const Navbar: React.FC = () => {
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <Image
-                  alt="profile picture"
-                  src={profilePictureSrc}
-                  className="size-10 rounded-full ring-2 ring-purple-700"
-                  width={40}
-                  height={40}
-                />
+                {isDataUrl(profilePictureSrc) ? (
+                  <img
+                    alt="profile picture"
+                    src={profilePictureSrc}
+                    className="w-10 h-10 rounded-full ring-2 ring-purple-700 object-cover"
+                  />
+                ) : (
+                  <Image
+                    alt="profile picture"
+                    src={profilePictureSrc}
+                    className="w-10 h-10 rounded-full ring-2 ring-purple-700 object-cover"
+                    width={40}
+                    height={40}
+                  />
+                )}
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel>{user?.username || "My Account"}</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  {user?.username || "My Account"}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

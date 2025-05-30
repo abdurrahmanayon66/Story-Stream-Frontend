@@ -98,24 +98,14 @@ export async function GET(request: Request): Promise<NextResponse> {
       });
 
       const result = await response.json();
-      console.log('Session Check - currentUser response:', {
-        data: result.data,
-        errors: result.errors,
-      });
       return result;
     };
 
-    // Try currentUser query with accessToken from session
     let result: GraphQLResponse = await tryCurrentUserQuery(accessToken);
-
-    // Handle token expiration or invalid token
     if (
       result.errors?.some((err) => err.message.includes('Unauthorized')) ||
       result.data.currentUser === null
     ) {
-      console.log('Session Check - Token invalid or unauthorized');
-
-      // If we have a refresh token, try to refresh
       if (refreshToken) {
         console.log('Attempting token refresh...');
         const refreshResult = await client.mutate({
@@ -153,7 +143,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ isAuthenticated: false }, { status: 200 });
     }
 
-    console.log('Session Check - Success, user authenticated:', result.data.currentUser);
     return NextResponse.json({
       isAuthenticated: true,
       accessToken,
@@ -175,13 +164,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    // Get session from NextAuth
     const session = await getServerSession(authConfig);
-
-    console.log(
-      'Session Check POST - Refresh token from session:',
-      session?.refreshToken ? session.refreshToken.substring(0, 10) + '...' : 'missing'
-    );
 
     if (!session || !session.refreshToken) {
       console.log('Session Check POST - No session or refresh token found');
@@ -196,7 +179,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
 
     const refreshData = refreshResult.data.refreshToken;
-    console.log('Session Check POST - Refresh token response:', refreshData);
 
     if (refreshData.__typename === 'AuthError') {
       console.error('Session Check POST - Refresh token error:', refreshData.message);

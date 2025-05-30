@@ -1,11 +1,33 @@
 'use client';
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Check session=invalid or session=error and destroy session
+  useEffect(() => {
+    const sessionStatus = searchParams.get('session');
+    if (sessionStatus === 'invalid' || sessionStatus === 'error') {
+      const destroySession = async () => {
+        try {
+          await signOut({ redirect: false });
+          router.replace('/auth'); // Clean up URL
+        } catch (error) {
+          console.error('Failed to sign out:', error);
+          router.replace('/auth'); // Still redirect even on error
+        }
+      };
+      destroySession();
+    }
+  }, [searchParams, router]);
 
   const toggleForm = () => {
     setIsLogin(!isLogin);

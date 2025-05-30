@@ -15,18 +15,10 @@ export default function LoginForm({ className }: LoginFormProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  useEffect(() => {
-    if (status === 'authenticated' && session) {
-      toast.success('Login successful! Redirecting...');
-      router.push('/home');
-    }
-  }, [session, status, router]);
-
   const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
-    console.log('Credentials submit started');
 
     try {
       const result = await signIn('credentials', {
@@ -34,41 +26,31 @@ export default function LoginForm({ className }: LoginFormProps) {
         email,
         password,
       });
-      console.log('signIn result:', result);
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      if (result?.error) throw new Error(result.error);
+      if (!result?.ok) throw new Error('Login failed: Invalid credentials');
 
-      if (!result?.ok) {
-        throw new Error('Login failed: Invalid response from server');
-      }
+      toast.success('Login successful!');
+      router.push('/my-feed');
     } catch (error: any) {
-      console.error('Login error:', error);
       toast.error(error.message || 'Login failed. Please try again.');
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    if (loading) return; // Prevent multiple clicks
+    if (loading) return;
     setLoading(true);
-    console.log('Google sign-in started');
 
     try {
-      const result = await signIn('google', {
-        redirect: false,
-      });
+      const result = await signIn('google', { redirect: false });
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      if (result?.error) throw new Error(result.error);
+      if (!result?.ok) throw new Error('Google login failed: Invalid response from server');
 
-      if (!result?.ok) {
-        throw new Error('Google login failed: Invalid response from server');
-      }
+      toast.success('Google login successful!');
+      router.push('/my-feed');
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
       toast.error(error.message || 'Google login failed. Please try again.');
       setLoading(false);
     }
