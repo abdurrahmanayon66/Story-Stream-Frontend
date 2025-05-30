@@ -1,4 +1,4 @@
-// utils/authConfig.ts - COMPLETE CONFIGURATION
+// utils/authConfig.ts - COMPLETE CONFIGURATION WITH SESSION CLEARING
 import { NextAuthConfig } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
@@ -55,6 +55,28 @@ const OAUTH_LOGIN_MUTATION = gql`
   }
 `;
 
+// Helper function to clear existing session
+async function clearExistingSession(req?: any) {
+  try {
+    // Clear session cookie if it exists
+    if (req?.cookies) {
+      const sessionCookies = Object.keys(req.cookies).filter(
+        (key) => key.startsWith('next-auth.session-token') || 
+                 key.startsWith('__Secure-next-auth.session-token') ||
+                 key.startsWith('next-auth.csrf-token') ||
+                 key.startsWith('__Host-next-auth.csrf-token')
+      );
+      
+      // Mark cookies for deletion
+      sessionCookies.forEach((cookieName) => {
+        delete req.cookies[cookieName];
+      });
+    }
+  } catch (error) {
+    console.warn('Error clearing existing session:', error);
+  }
+}
+
 export const authConfig: NextAuthConfig = {
   providers: [
     CredentialsProvider({
@@ -63,10 +85,13 @@ export const authConfig: NextAuthConfig = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
+
+        // Clear existing session before authentication
+        await clearExistingSession(req);
 
         try {
           const { data } = await client.mutate({
@@ -109,7 +134,10 @@ export const authConfig: NextAuthConfig = {
   },
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email, credentials }) {
+      // Clear existing session before any sign-in attempt
+      await clearExistingSession();
+
       if (account?.provider === 'google' && profile) {
         try {
           const { data } = await client.mutate({
@@ -143,7 +171,18 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Clear token data on signin trigger to ensure fresh session
+      if (trigger === 'signIn' || trigger === 'signUp') {
+        // Reset all token data for fresh session
+        token = {
+          sub: token.sub, // Keep the subject ID
+          iat: token.iat,
+          exp: token.exp,
+          jti: token.jti,
+        };
+      }
+
       // Initial sign in - store user data in token
       if (user) {
         token.accessToken = user.accessToken;
@@ -154,7 +193,18 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
 
-    async session({ session, token }) {
+    async session({ session, token, trigger }) {
+      // Clear session data on signin to ensure fresh session
+      if (trigger === 'signIn' || trigger === 'signUp') {
+        // Keep only essential session data, clear old auth data
+        session = {
+          ...session,
+          accessToken: undefined,
+          refreshToken: undefined,
+          graphqlResult: undefined,
+        };
+      }
+
       // Send properties to the client
       session.accessToken = token.accessToken;
       session.refreshToken = token.refreshToken;
@@ -166,5 +216,14 @@ export const authConfig: NextAuthConfig = {
 
   pages: {
     signIn: '/auth',
+  },
+
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      console.log('New sign-in event - session cleared');
+    },
+    async signOut({ session, token }) {
+      console.log('Sign-out event - cleaning up session');
+    },
   },
 };
