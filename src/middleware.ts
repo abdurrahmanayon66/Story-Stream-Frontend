@@ -44,11 +44,6 @@ export async function middleware(request: NextRequest) {
       if (!data.isAuthenticated) {
         return NextResponse.redirect(new URL('/auth?session=invalid', request.url));
       }
-
-      if (pathname === '/create-blog') {
-        return NextResponse.redirect(new URL('/my-feed', request.url));
-      }
-
       return NextResponse.next();
     } catch {
       return NextResponse.redirect(new URL('/auth?session=error', request.url));
