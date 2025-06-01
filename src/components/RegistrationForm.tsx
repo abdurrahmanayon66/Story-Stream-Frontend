@@ -169,18 +169,6 @@ export default function RegistrationForm({ className, onToggleForm }: Registrati
           {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          Already have an account?{' '}
-          <button
-            onClick={onToggleForm}
-            className="text-blue-600 hover:underline"
-            disabled={loading}
-          >
-            Sign In
-          </button>
-        </p>
-      </div>
     </div>
   );
 }
