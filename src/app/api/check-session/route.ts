@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/utils/authConfig'; 
+import { User } from '@/types/user';
 
 const client = new ApolloClient({
   uri: process.env.NEXT_PUBLIC_API_URL,
@@ -43,15 +44,6 @@ const REFRESH_TOKEN_MUTATION = gql`
     }
   }
 `;
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  image: string | null;
-  profileImage: string | null;
-  createdAt: string;
-}
 
 interface GraphQLResponse {
   data: {
