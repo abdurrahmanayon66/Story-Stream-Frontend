@@ -92,14 +92,14 @@ const Navbar: React.FC = () => {
   const profilePictureSrc = getProfilePictureSrc();
 
   return (
-    <div className="bg-extraLightPurple flex py-4 rounded-md px-4 my-6 items-center mx-24 justify-between">
+    <div className="bg-extraLightPurple flex py-4 rounded-md px-4 my-3 items-center mx-24 justify-between">
       <h1 className="text-3xl font-bold text-darkPurple">StoryStream</h1>
       <div className="flex items-center space-x-6">
         {isAuthenticated ? (
           <div className="flex space-x-4 items-center">
-            <Link href="/explore">Explore</Link>
-            <Link href="/post">Post</Link>
-            <Link href="/analytics">Analytics</Link>
+            <Link href="/home">Home</Link>
+            <Link href="/my-feed">My Feed</Link>
+            <Link href="/create-blog">Post Blog</Link>
             <button>
               <AiOutlineBell size={24} />
             </button>

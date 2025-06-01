@@ -1,36 +1,48 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
+import LottiePlayer from '@/components/LottiePlayer';
+import loginAnimation from '../../../assets/lottieFiles/login.json';
+import signupAnimation from '../../../assets/lottieFiles/signup.json';
+import { AnimationConfigWithData } from 'lottie-web';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [currentAnimation, setCurrentAnimation] = useState<AnimationConfigWithData>(loginAnimation);
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Check session=invalid or session=error and destroy session
   useEffect(() => {
     const sessionStatus = searchParams.get('session');
     if (sessionStatus === 'invalid' || sessionStatus === 'error') {
       const destroySession = async () => {
         try {
           await signOut({ redirect: false });
-          router.replace('/auth'); // Clean up URL
+          router.replace('/auth');
         } catch (error) {
           console.error('Failed to sign out:', error);
-          router.replace('/auth'); // Still redirect even on error
+          router.replace('/auth');
         }
       };
       destroySession();
     }
   }, [searchParams, router]);
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setCurrentAnimation(isLogin ? loginAnimation : signupAnimation);
+    }, 300); 
+
+    return () => clearTimeout(timeout);
+  }, [isLogin]);
+
   const toggleForm = () => {
-    setIsLogin(!isLogin);
+    setIsLogin((prev) => !prev);
   };
 
   const imageVariants = {
@@ -46,18 +58,18 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen mx-32 w-full flex items-center justify-center bg-gray-100">
       <div className="w-full h-[600px] flex overflow-hidden rounded-2xl shadow-2xl">
-        {/* Image Section */}
         <motion.div
-          className="w-1/2 h-full bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80')`,
-          }}
+          className="w-1/2 h-full bg-white flex items-center justify-center"
           initial={isLogin ? 'left' : 'right'}
           animate={isLogin ? 'left' : 'right'}
           variants={imageVariants}
-        />
+        >
+          <LottiePlayer
+            animationData={currentAnimation}
+            className="w-[90%] h-[90%]"
+          />
+        </motion.div>
 
-        {/* Form Section */}
         <motion.div
           className="w-1/2 h-full flex items-center justify-center bg-white relative"
           initial={isLogin ? 'right' : 'left'}
@@ -89,7 +101,6 @@ export default function AuthPage() {
               </motion.div>
             )}
           </AnimatePresence>
-          {/* Toggle Button */}
           <button
             onClick={toggleForm}
             className="absolute top-4 right-4 text-blue-600 hover:underline text-sm font-medium"

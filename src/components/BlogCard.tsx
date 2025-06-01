@@ -5,7 +5,7 @@ import Tag from "./Tag";
 
 const BlogCard = () => {
   return (
-    <div  className="bg-white rounded-2xl p-6 space-y-4 shadow-sm">
+    <div  className="bg-white rounded-2xl text-gray-800 p-6 space-y-4 shadow-sm">
       <section className="grid grid-cols-12">
         <div className="col-span-9 grid grid-rows gap-y-4">
           <h1 className="text-xl font-bold">

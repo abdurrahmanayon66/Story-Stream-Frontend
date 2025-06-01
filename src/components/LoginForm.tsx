@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 
@@ -15,46 +15,59 @@ export default function LoginForm({ className }: LoginFormProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+ const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  if (loading) return;
+  setLoading(true);
 
-    try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-      });
+  try {
+    await signOut({ redirect: false });
+    
+    // Small delay to ensure session is fully cleared
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const result = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+    });
 
-      if (result?.error) throw new Error(result.error);
-      if (!result?.ok) throw new Error('Login failed: Invalid credentials');
+    if (result?.error) throw new Error(result.error);
+    if (!result?.ok) throw new Error('Login failed: Invalid credentials');
+    
+    toast.success('Login successful!');
+    router.push('/my-feed');
+  } catch (error: any) {
+    toast.error(error.message);
+    setLoading(false);
+  }
+};
 
-      toast.success('Login successful!');
-      router.push('/my-feed');
-    } catch (error: any) {
-      toast.error(error.message || 'Login failed. Please try again.');
-      setLoading(false);
-    }
-  };
+const handleGoogleSignIn = async () => {
+  if (loading) return;
+  setLoading(true);
 
-  const handleGoogleSignIn = async () => {
-    if (loading) return;
-    setLoading(true);
-
-    try {
-      const result = await signIn('google', { redirect: false });
-
-      if (result?.error) throw new Error(result.error);
-      if (!result?.ok) throw new Error('Google login failed: Invalid response from server');
-
-      toast.success('Google login successful!');
-      router.push('/my-feed');
-    } catch (error: any) {
-      toast.error(error.message || 'Google login failed. Please try again.');
-      setLoading(false);
-    }
-  };
+  try {
+    // Clear any existing session before signing in
+    await signOut({ redirect: false });
+    
+    // Small delay to ensure session is fully cleared
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const result = await signIn('google', { 
+      redirect: false,
+      callbackUrl: '/my-feed' 
+    });
+    
+    if (result?.error) throw new Error(result.error);
+    if (!result?.ok) throw new Error('Google login failed: Invalid response from server');
+    
+    toast.success('Google login successful!');
+    router.push('/my-feed');
+  } catch (error: any) {
+    setLoading(false);
+  }
+};
 
   return (
     <div className={`bg-white p-8 rounded-2xl shadow-lg w-full max-w-md ${className}`}>
