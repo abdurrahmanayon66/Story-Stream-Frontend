@@ -62,7 +62,7 @@ export default function AuthPage() {
         <h1 className="text-3xl font-bold text-darkPurple text-center my-4">
           StoryStream
         </h1>
-        <div className="grid grid-cols-2 gap-x-10">
+        <div className="grid grid-cols-2">
           <motion.div
             className="w-full h-full bg-white flex items-center justify-center"
             initial={isLogin ? "left" : "right"}
@@ -71,7 +71,7 @@ export default function AuthPage() {
           >
             <LottiePlayer
               animationData={currentAnimation}
-              className="w-full h-full"
+              className="h-[400px]"
             />
           </motion.div>
 
@@ -108,7 +108,9 @@ export default function AuthPage() {
             </AnimatePresence>
             <button
               onClick={toggleForm}
-              className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-sm font-medium"
+              className={`absolute left-1/2 transform -translate-x-1/2 text-sm font-medium ${
+                isLogin ? "bottom-0" : "bottom-0"
+              }`}
             >
               <span className="text-gray-600">
                 {isLogin

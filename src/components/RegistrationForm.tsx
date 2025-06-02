@@ -138,8 +138,6 @@ export default function RegistrationForm({
       if (!registrationResponse.ok || registrationResult.error) {
         throw new Error(registrationResult.error || "Registration failed");
       }
-
-      toast.success("Registration successful! Logging you in...");
       const signInResult = await signIn("credentials", {
         redirect: false,
         email,
@@ -150,8 +148,6 @@ export default function RegistrationForm({
         toast.error("Registered but login failed. Try manually.");
         return;
       }
-
-      toast.success("Welcome! Redirecting to your feed...");
       router.push("/my-feed");
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -172,13 +168,12 @@ export default function RegistrationForm({
 
   return (
     <div
-      className={`bg-white p-8 rounded-2xl shadow-lg w-full max-w-4xl mx-auto ${className}`}
+      className={`bg-white p-8 rounded-2xl w-full ${className}`}
     >
       <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">
         Create Account
       </h2>
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Column 1 */}
         <div className="space-y-4">
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
@@ -243,7 +238,6 @@ export default function RegistrationForm({
           </div>
         </div>
 
-        {/* Column 2 */}
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -290,7 +284,6 @@ export default function RegistrationForm({
           </div>
         </div>
 
-        {/* Full-width Submit Button */}
         <div className="col-span-1 md:col-span-2">
           <button
             type="submit"
