@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useRef, useLayoutEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { useBlogStore, TabType } from "../stores/blog";
-import { usePrefetchBlogs } from "@/hooks/blog";
+import { useBlogStore, TabType } from "../stores/blogStore";
+import { usePrefetchBlogs } from "@/hooks/blogHooks";
 
 const tabs = [
   "For You",

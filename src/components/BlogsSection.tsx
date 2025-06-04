@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { useBlogStore } from "../stores/blog";
-import { useBlogs, usePrefetchBlogs } from "../hooks/blog";
+import { useBlogStore } from "../stores/blogStore";
+import { useBlogs, usePrefetchBlogs } from "../hooks/blogHooks";
 import BlogCard from "./BlogCard";
 import Pagination from "./Pagination";
 import LoadingSpinner from "./LoadingSpinner";
@@ -41,26 +41,25 @@ const BlogsSection: React.FC = () => {
   const loading = isLoading || currentTabLoading;
   const errorState = error || currentTabError;
 
-  // Prefetch next tab when user hovers over tab buttons
+  if(blogs.length >0) {
+    console.log(blogs);
+  }
+
   const handleTabHover = (tab: string) => {
     if (tab !== activeTab) {
       prefetchTab(tab as any);
     }
   };
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Prefetch adjacent pages
   useEffect(() => {
     if (pagination) {
       if (pagination.hasNextPage) {
-        // Prefetch next page in background
         setTimeout(() => {
           const nextPageData = { ...useBlogStore.getState(), currentPage: currentPage + 1 };
-          // This would trigger a background fetch
         }, 1000);
       }
     }
@@ -95,7 +94,6 @@ const BlogsSection: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-y-6">
-      {/* Loading indicator for page changes */}
       {loading && blogs.length > 0 && (
         <div className="text-center py-2">
           <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
@@ -108,7 +106,6 @@ const BlogsSection: React.FC = () => {
         </div>
       )}
 
-      {/* Blog Cards */}
       <div className={`transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
         {blogs.map((blog) => (
           <BlogCard 
@@ -119,7 +116,6 @@ const BlogsSection: React.FC = () => {
         ))}
       </div>
 
-      {/* Error message for failed updates */}
       {errorState && blogs.length > 0 && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
           <p className="text-sm">

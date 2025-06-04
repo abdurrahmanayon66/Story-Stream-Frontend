@@ -31,8 +31,8 @@ const BlogContent = () => {
             height={40}
             className="md:w-[30px] md:h-[30px] object-cover rounded-full"
           />
-          <span>Abdur Rahman Ayon</span>
-          <span className="ml-2">Dec 15, 2024</span>
+          <span className="text-gray-800">Abdur Rahman Ayon</span>
+          <span className="ml-2 text-gray-800">Dec 15, 2024</span>
         </div>
       </section>
       <section className="my-6">

@@ -1,13 +1,25 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { useBlogStore, TabType, BlogConnection, Blog, BlogFilters, BlogSortBy } from '../stores/blog';
+import { useBlogStore, TabType, BlogConnection, Blog, BlogFilters, BlogSortBy } from '../stores/blogStore';
 import { GraphQLClient } from 'graphql-request';
+import { useSession } from 'next-auth/react';
 
-// Initialize GraphQL client
-const graphqlClient = new GraphQLClient('/api/graphql', {
-  credentials: 'include', // Include cookies for authentication
-});
+const graphqlClient = new GraphQLClient(process.env.NEXT_PUBLIC_API_URL!);
 
-// GraphQL queries
+export const useAuthenticatedGraphqlClient = () => {
+  const { data: session } = useSession();
+  return (client = graphqlClient) => {
+    if (!session?.accessToken) {
+      return client;
+    }
+
+    return new GraphQLClient(client.url, {
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+      },
+    });
+  };
+};
+
 const GET_BLOGS = `
   query GetBlogs($input: BlogsInput!) {
     blogs(input: $input) {
@@ -20,16 +32,12 @@ const GET_BLOGS = `
         genre
         author {
           id
-          name
+          fullName
           username
           image
           profileImage
         }
         createdAt
-        updatedAt
-        likesCount
-        commentsCount
-        bookmarksCount
       }
       pagination {
         currentPage
@@ -54,16 +62,12 @@ const GET_FOR_YOU_BLOGS = `
         genre
         author {
           id
-          name
+          fullName
           username
           image
           profileImage
         }
         createdAt
-        updatedAt
-        likesCount
-        commentsCount
-        bookmarksCount
       }
       pagination {
         currentPage
@@ -88,16 +92,74 @@ const GET_FOLLOWING_BLOGS = `
         genre
         author {
           id
-          name
+          fullName
           username
           image
           profileImage
         }
         createdAt
-        updatedAt
-        likesCount
-        commentsCount
-        bookmarksCount
+      }
+      pagination {
+        currentPage
+        totalPages
+        totalCount
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+// NEW: Random blogs query
+const GET_RANDOM_BLOGS = `
+  query GetRandomBlogs($input: BlogsInput!) {
+    randomBlogs(input: $input) {
+      blogs {
+        id
+        title
+        slug
+        content
+        image
+        genre
+        author {
+          id
+          fullName
+          username
+          image
+          profileImage
+        }
+        createdAt
+      }
+      pagination {
+        currentPage
+        totalPages
+        totalCount
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+// NEW: Blogs by genres query
+const GET_BLOGS_BY_GENRES = `
+  query GetBlogsByGenres($genres: [String!]!, $input: BlogsInput!) {
+    blogsByGenres(genres: $genres, input: $input) {
+      blogs {
+        id
+        title
+        slug
+        content
+        image
+        genre
+        author {
+          id
+          fullName
+          username
+          image
+          profileImage
+        }
+        createdAt
       }
       pagination {
         currentPage
@@ -121,7 +183,7 @@ const GET_BLOG_BY_ID = `
       genre
       author {
         id
-        name
+        fullName
         username
         image
         profileImage
@@ -155,65 +217,10 @@ const GET_BLOG_BY_ID = `
           username
         }
       }
-      likesCount
-      commentsCount
-      bookmarksCount
     }
   }
 `;
 
-const CREATE_BLOG = `
-  mutation CreateBlog($title: String!, $content: JSON!, $image: Upload, $genre: [String!]!) {
-    createBlog(title: $title, content: $content, image: $image, genre: $genre) {
-      id
-      title
-      slug
-      content
-      image
-      genre
-      author {
-        id
-        name
-        username
-        image
-        profileImage
-      }
-      createdAt
-      updatedAt
-      likesCount
-      commentsCount
-      bookmarksCount
-    }
-  }
-`;
-
-const LIKE_BLOG = `
-  mutation LikeBlog($blogId: Int!) {
-    likeBlog(blogId: $blogId) {
-      id
-      user {
-        id
-        name
-        username
-      }
-      blog {
-        id
-        likesCount
-      }
-    }
-  }
-`;
-
-const UNLIKE_BLOG = `
-  mutation UnlikeBlog($blogId: Int!) {
-    unlikeBlog(blogId: $blogId) {
-      success
-      message
-    }
-  }
-`;
-
-// Query key factory
 export const blogKeys = {
   all: ['blogs'] as const,
   lists: () => [...blogKeys.all, 'list'] as const,
@@ -221,9 +228,13 @@ export const blogKeys = {
     [...blogKeys.lists(), tab, filters, sortBy, page, limit] as const,
   details: () => [...blogKeys.all, 'detail'] as const,
   detail: (id: number) => [...blogKeys.details(), id] as const,
+  // NEW: Keys for new queries
+  random: (page: number, limit: number, sortBy: BlogSortBy) =>
+    [...blogKeys.all, 'random', page, limit, sortBy] as const,
+  genres: (genres: string[], page: number, limit: number, sortBy: BlogSortBy) =>
+    [...blogKeys.all, 'genres', genres, page, limit, sortBy] as const,
 };
 
-// Custom hook to get query variables based on tab
 const useTabQueryVariables = () => {
   const { activeTab, filters, sortBy, currentPage, limit } = useBlogStore();
 
@@ -238,15 +249,14 @@ const useTabQueryVariables = () => {
 
   const getQueryAndVariables = (tab: TabType = activeTab) => {
     const variables = getQueryVariables(tab);
-    
     switch (tab) {
       case 'For You':
         return { query: GET_FOR_YOU_BLOGS, variables };
       case 'Following':
         return { query: GET_FOLLOWING_BLOGS, variables };
       case 'Trending':
-        return { 
-          query: GET_BLOGS, 
+        return {
+          query: GET_BLOGS,
           variables: {
             input: {
               ...variables.input,
@@ -255,8 +265,8 @@ const useTabQueryVariables = () => {
           },
         };
       case 'Latest':
-        return { 
-          query: GET_BLOGS, 
+        return {
+          query: GET_BLOGS,
           variables: {
             input: {
               ...variables.input,
@@ -265,8 +275,8 @@ const useTabQueryVariables = () => {
           },
         };
       case 'Most Liked':
-        return { 
-          query: GET_BLOGS, 
+        return {
+          query: GET_BLOGS,
           variables: {
             input: {
               ...variables.input,
@@ -283,10 +293,10 @@ const useTabQueryVariables = () => {
   return { getQueryVariables, getQueryAndVariables };
 };
 
-// Hook to fetch blogs for current tab
 export const useBlogs = (options?: Partial<UseQueryOptions<BlogConnection>>) => {
   const { activeTab, filters, sortBy, currentPage, limit, setBlogData, setLoading, setError } = useBlogStore();
   const { getQueryAndVariables } = useTabQueryVariables();
+  const getAuthClient = useAuthenticatedGraphqlClient();
 
   const { query, variables } = getQueryAndVariables();
 
@@ -295,11 +305,10 @@ export const useBlogs = (options?: Partial<UseQueryOptions<BlogConnection>>) => 
     queryFn: async (): Promise<BlogConnection> => {
       setLoading(activeTab, true);
       setError(activeTab, null);
-      
       try {
-        const response = await graphqlClient.request(query, variables);
+        const authClient = getAuthClient(graphqlClient);
+        const response = await authClient.request(query, variables);
         const data = response.blogs || response.forYouBlogs || response.followingBlogs;
-        
         setBlogData(activeTab, data);
         return data;
       } catch (error) {
@@ -310,17 +319,17 @@ export const useBlogs = (options?: Partial<UseQueryOptions<BlogConnection>>) => 
         setLoading(activeTab, false);
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     ...options,
   });
 };
 
-// Hook to fetch blogs for a specific tab
 export const useBlogsForTab = (tab: TabType, options?: Partial<UseQueryOptions<BlogConnection>>) => {
   const { filters, sortBy, currentPage, limit, setBlogData, setLoading, setError } = useBlogStore();
   const { getQueryAndVariables } = useTabQueryVariables();
+  const getAuthClient = useAuthenticatedGraphqlClient();
 
   const { query, variables } = getQueryAndVariables(tab);
 
@@ -329,11 +338,10 @@ export const useBlogsForTab = (tab: TabType, options?: Partial<UseQueryOptions<B
     queryFn: async (): Promise<BlogConnection> => {
       setLoading(tab, true);
       setError(tab, null);
-      
       try {
-        const response = await graphqlClient.request(query, variables);
+        const authClient = getAuthClient(graphqlClient);
+        const response = await authClient.request(query, variables);
         const data = response.blogs || response.forYouBlogs || response.followingBlogs;
-        
         setBlogData(tab, data);
         return data;
       } catch (error) {
@@ -344,7 +352,7 @@ export const useBlogsForTab = (tab: TabType, options?: Partial<UseQueryOptions<B
         setLoading(tab, false);
       }
     },
-    enabled: false, // Only fetch when explicitly called
+    enabled: false,
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -352,134 +360,134 @@ export const useBlogsForTab = (tab: TabType, options?: Partial<UseQueryOptions<B
   });
 };
 
-// Hook to fetch a single blog
 export const useBlog = (id: number, options?: Partial<UseQueryOptions<Blog>>) => {
+  const getAuthClient = useAuthenticatedGraphqlClient();
+
   return useQuery({
     queryKey: blogKeys.detail(id),
     queryFn: async (): Promise<Blog> => {
-      const response = await graphqlClient.request(GET_BLOG_BY_ID, { id });
+      const authClient = getAuthClient(graphqlClient);
+      const response = await authClient.request(GET_BLOG_BY_ID, { id });
       return response.blog;
     },
     enabled: !!id,
-    staleTime: 10 * 60 * 1000, // 10 minutes for individual blog posts
-    cacheTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 10 * 60 * 1000,
+    cacheTime: 30 * 60 * 1000,
     ...options,
   });
 };
 
-// Hook to create a blog
-export const useCreateBlog = () => {
-  const queryClient = useQueryClient();
-  const { activeTab, addBlogToTab } = useBlogStore();
+// NEW: Hook for random blogs
+export const useRandomBlogs = (
+  page: number = 1,
+  limit: number = 10,
+  sortBy: BlogSortBy = 'latest',
+  options?: Partial<UseQueryOptions<BlogConnection>>
+) => {
+  const getAuthClient = useAuthenticatedGraphqlClient();
 
-  return useMutation({
-    mutationFn: async (variables: {
-      title: string;
-      content: any;
-      image?: File;
-      genre: string[];
-    }) => {
-      const response = await graphqlClient.request(CREATE_BLOG, variables);
-      return response.createBlog;
-    },
-    onSuccess: (newBlog: Blog) => {
-      // Add the new blog to the current tab
-      addBlogToTab(activeTab, newBlog);
-      
-      // Invalidate and refetch blog lists
-      queryClient.invalidateQueries({ queryKey: blogKeys.lists() });
-      
-      // Update individual blog cache
-      queryClient.setQueryData(blogKeys.detail(newBlog.id), newBlog);
-    },
-    onError: (error) => {
-      console.error('Failed to create blog:', error);
-    },
-  });
-};
-
-// Hook to like a blog
-export const useLikeBlog = () => {
-  const queryClient = useQueryClient();
-  const { updateBlogInTab } = useBlogStore();
-
-  return useMutation({
-    mutationFn: async (blogId: number) => {
-      const response = await graphqlClient.request(LIKE_BLOG, { blogId });
-      return response.likeBlog;
-    },
-    onSuccess: (likeData, blogId) => {
-      // Update all tabs that might contain this blog
-      const tabs: TabType[] = ['For You', 'Following', 'Trending', 'Latest', 'Most Liked', 'Explore'];
-      
-      tabs.forEach(tab => {
-        updateBlogInTab(tab, blogId, {
-          likesCount: likeData.blog.likesCount,
-        });
+  return useQuery({
+    queryKey: blogKeys.random(page, limit, sortBy),
+    queryFn: async (): Promise<BlogConnection> => {
+      const authClient = getAuthClient(graphqlClient);
+      const response = await authClient.request(GET_RANDOM_BLOGS, {
+        input: {
+          page,
+          limit,
+          sortBy: sortBy.toUpperCase(),
+        },
       });
-
-      // Update individual blog cache
-      queryClient.setQueryData(
-        blogKeys.detail(blogId),
-        (old: Blog | undefined) => 
-          old ? { ...old, likesCount: likeData.blog.likesCount } : old
-      );
-
-      // Invalidate to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: blogKeys.lists() });
+      return response.randomBlogs;
     },
-    onError: (error) => {
-      console.error('Failed to like blog:', error);
-    },
+    staleTime: 2 * 60 * 1000, // Shorter stale time for random content
+    cacheTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    ...options,
   });
 };
 
-// Hook to unlike a blog
-export const useUnlikeBlog = () => {
-  const queryClient = useQueryClient();
-  const { updateBlogInTab } = useBlogStore();
+// NEW: Hook for blogs by genres
+export const useBlogsByGenres = (
+  genres: string[],
+  page: number = 1,
+  limit: number = 10,
+  sortBy: BlogSortBy = 'latest',
+  options?: Partial<UseQueryOptions<BlogConnection>>
+) => {
+  const getAuthClient = useAuthenticatedGraphqlClient();
 
-  return useMutation({
-    mutationFn: async (blogId: number) => {
-      const response = await graphqlClient.request(UNLIKE_BLOG, { blogId });
-      return response.unlikeBlog;
-    },
-    onSuccess: (_, blogId) => {
-      // Update all tabs that might contain this blog
-      const tabs: TabType[] = ['For You', 'Following', 'Trending', 'Latest', 'Most Liked', 'Explore'];
-      
-      tabs.forEach(tab => {
-        updateBlogInTab(tab, blogId, {
-          likesCount: Math.max(0, (useBlogStore.getState().blogData[tab]?.blogs.find(b => b.id === blogId)?.likesCount || 1) - 1),
-        });
+  return useQuery({
+    queryKey: blogKeys.genres(genres, page, limit, sortBy),
+    queryFn: async (): Promise<BlogConnection> => {
+      const authClient = getAuthClient(graphqlClient);
+      const response = await authClient.request(GET_BLOGS_BY_GENRES, {
+        genres,
+        input: {
+          page,
+          limit,
+          sortBy: sortBy.toUpperCase(),
+        },
       });
-
-      // Invalidate to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: blogKeys.lists() });
+      return response.blogsByGenres;
     },
-    onError: (error) => {
-      console.error('Failed to unlike blog:', error);
-    },
+    enabled: genres.length > 0,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    ...options,
   });
 };
 
-// Hook to prefetch blogs for a tab
 export const usePrefetchBlogs = () => {
   const queryClient = useQueryClient();
   const { getQueryAndVariables } = useTabQueryVariables();
+  const getAuthClient = useAuthenticatedGraphqlClient();
 
   const prefetchTab = async (tab: TabType) => {
     const { query, variables } = getQueryAndVariables(tab);
-    
     await queryClient.prefetchQuery({
       queryKey: blogKeys.list(tab, {}, 'latest', 1, 10),
       queryFn: async () => {
-        const response = await graphqlClient.request(query, variables);
+        const authClient = getAuthClient(graphqlClient);
+        const response = await authClient.request(query, variables);
         return response.blogs || response.forYouBlogs || response.followingBlogs;
       },
       staleTime: 5 * 60 * 1000,
     });
   };
 
-  return { prefetchTab };
+  // NEW: Prefetch random blogs
+  const prefetchRandomBlogs = async () => {
+    await queryClient.prefetchQuery({
+      queryKey: blogKeys.random(1, 10, 'latest'),
+      queryFn: async () => {
+        const authClient = getAuthClient(graphqlClient);
+        const response = await authClient.request(GET_RANDOM_BLOGS, {
+          input: { page: 1, limit: 10, sortBy: 'LATEST' },
+        });
+        return response.randomBlogs;
+      },
+      staleTime: 2 * 60 * 1000,
+    });
+  };
+
+  // NEW: Prefetch blogs by genres
+  const prefetchBlogsByGenres = async (genres: string[]) => {
+    if (genres.length === 0) return;
+    
+    await queryClient.prefetchQuery({
+      queryKey: blogKeys.genres(genres, 1, 10, 'latest'),
+      queryFn: async () => {
+        const authClient = getAuthClient(graphqlClient);
+        const response = await authClient.request(GET_BLOGS_BY_GENRES, {
+          genres,
+          input: { page: 1, limit: 10, sortBy: 'LATEST' },
+        });
+        return response.blogsByGenres;
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  return { prefetchTab, prefetchRandomBlogs, prefetchBlogsByGenres };
 };

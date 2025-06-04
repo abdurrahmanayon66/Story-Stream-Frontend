@@ -90,10 +90,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 2 * 1024 * 1024;
     if (imageFile.size > maxSize) {
       return NextResponse.json(
-        { error: "Image file too large. Maximum size is 5MB" }, 
+        { error: "Image file too large. Maximum size is 2MB" }, 
         { status: 413 }
       );
     }
