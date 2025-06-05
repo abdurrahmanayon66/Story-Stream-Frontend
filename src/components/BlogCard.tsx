@@ -3,20 +3,16 @@ import Image from "next/image";
 import { CiHeart, CiBookmark, CiChat1 } from "react-icons/ci";
 import Tag from "./Tag";
 import { useRouter } from "next/navigation";
+import {formatDate} from "../utils/dateFormat";
 
 const BlogCard = ({ blog }) => {
   const router = useRouter();
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString("en-US", options);
-  };
 
   return (
     <div
       className="bg-white rounded-2xl text-gray-800 p-6 space-y-4 shadow-sm"
-      onClick={() => router.push(`/blogs/${blog?.id}/${blog?.slug}`)}
     >
-      <section className="grid grid-cols-12">
+      <section className="grid grid-cols-12 hover:cursor-pointer"  onClick={() => router.push(`/blogs/${blog?.id}/${blog?.slug}`)}>
         <div className="col-span-9 grid grid-rows gap-y-4">
           <h1 className="text-2xl font-bold">{blog?.title}</h1>
           <div className="flex gap-x-3">
@@ -39,7 +35,7 @@ const BlogCard = ({ blog }) => {
                 {blog?.author?.username}
               </span>
               <span className="text-gray-700">
-                {blog?.createdAt ? formatDate(blog.createdAt) : ""}
+                {formatDate(blog?.createdAt)}
               </span>
             </div>
           </div>
