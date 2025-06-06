@@ -12,10 +12,6 @@ const BlogContent = () => {
 
   const { data: blog, isLoading, isError } = useBlog(blogId);
 
-  if (blog) {
-    console.log("Blog: ", blog);
-  }
-
   if (isLoading) return <p>Loading blog...</p>;
   if (isError || !blog) return <p>Failed to load blog.</p>;
 

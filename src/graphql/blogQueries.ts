@@ -18,41 +18,38 @@ export const GET_BLOGS = gql`
         image
         profileImage
       }
-      comments {
+      likesCount
+      commentsCount
+      bookmarksCount
+      hasLiked
+      hasBookmarked
+    }
+  }
+`;
+
+export const GET_MY_BLOGS = gql`
+  query GetMYBlogs {
+    myBlogs {
+      id
+      title
+      slug
+      description
+      content
+      image
+      genre
+      createdAt
+      author {
         id
-        content
-        createdAt
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-      }
-      likes {
-        id
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-      }
-      bookmarks {
-        id
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
+        username
+        fullName
+        image
+        profileImage
       }
       likesCount
       commentsCount
       bookmarksCount
+      hasLiked
+      hasBookmarked
     }
   }
 `;
@@ -60,58 +57,53 @@ export const GET_BLOGS = gql`
 export const GET_FOR_YOU_BLOGS = gql`
   query GetForYouBlogs {
     forYouBlogs {
-      blogs {
+      id
+      title
+      slug
+      description
+      content
+      image
+      genre
+      createdAt
+      author {
         id
-        title
-        slug
-        description
-        content
+        username
+        fullName
         image
-        genre
-        createdAt
-        author {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-        comments {
-          id
-          content
-          createdAt
-          user {
-            id
-            username
-            fullName
-            image
-            profileImage
-          }
-        }
-        likes {
-          id
-          user {
-            id
-            username
-            fullName
-            image
-            profileImage
-          }
-        }
-        bookmarks {
-          id
-          user {
-            id
-            username
-            fullName
-            image
-            profileImage
-          }
-        }
-        likesCount
-        commentsCount
-        bookmarksCount
+        profileImage
       }
+      likesCount
+      commentsCount
+      bookmarksCount
+      hasLiked
+      hasBookmarked
+    }
+  }
+`;
+
+export const GET_MOST_LIKED_BLOGS = gql`
+  query GetMostLikedBlogs {
+    mostLikedBlogs {
+      id
+      title
+      slug
+      description
+      content
+      image
+      genre
+      createdAt
+      author {
+        id
+        username
+        fullName
+        image
+        profileImage
+      }
+      likesCount
+      commentsCount
+      bookmarksCount
+      hasLiked
+      hasBookmarked
     }
   }
 `;
@@ -134,41 +126,11 @@ export const GET_BLOG_BY_ID = gql`
         image
         profileImage
       }
-      comments {
-        id
-        content
-        createdAt
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-      }
-      likes {
-        id
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-      }
-      bookmarks {
-        id
-        user {
-          id
-          username
-          fullName
-          image
-          profileImage
-        }
-      }
       likesCount
       commentsCount
       bookmarksCount
+      hasLiked
+      hasBookmarked
     }
   }
 `;

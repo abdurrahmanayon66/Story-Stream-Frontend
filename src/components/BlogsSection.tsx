@@ -1,6 +1,8 @@
 import React from "react";
 import { useBlogs } from "../hooks/blogHooks";
 import BlogCard from "./BlogCard";
+import LoadingSpinner from "./LoadingSpinner";
+import ErrorMessage from "./ErrorMessage";
 
 const BlogsSection: React.FC = () => {
   const {
@@ -9,6 +11,18 @@ const BlogsSection: React.FC = () => {
     error,
     refetch,
   } = useBlogs();
+
+  if(blogs.length>0){
+    console.log(blogs);
+  }
+
+ if(isLoading){
+  return <LoadingSpinner message="Loading Blogs..." />
+ }
+
+ if(error){
+  return <ErrorMessage message={error} onRetry={refetch} />
+ }
 
   return (
     <div className="flex flex-col gap-y-6">

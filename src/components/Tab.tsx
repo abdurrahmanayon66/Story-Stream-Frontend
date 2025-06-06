@@ -1,16 +1,7 @@
 "use client";
 import React, { useRef, useLayoutEffect, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useTabStore, TabType } from "../stores/tabStore";
-
-const tabs = [
-  "For You",
-  "Following",
-  "Trending",
-  "Latest",
-  "Most Liked",
-  "My Blogs",
-] as const;
+import { useTabStore, TabType, tabs } from "../stores/tabStore"; // <-- import tabs here
 
 const Tab: React.FC = () => {
   const { activeTab, setActiveTab } = useTabStore();
@@ -34,10 +25,6 @@ const Tab: React.FC = () => {
         width: tabRect.width,
       });
     }
-  }, [activeTab]);
-
-  useEffect(() => {
-    console.log("activeTab changed:", activeTab);
   }, [activeTab]);
 
   const handleClick = (tab: TabType) => {

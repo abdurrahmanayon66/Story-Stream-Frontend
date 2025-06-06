@@ -8,4 +8,5 @@ export interface User {
   image: string | null;
   profileImage: string | null;
   createdAt: string;
+  isFollowing: boolean;
 }
