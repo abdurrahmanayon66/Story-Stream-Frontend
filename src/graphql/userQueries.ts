@@ -1,21 +1,5 @@
 import { gql } from "graphql-tag";
 
-export const GET_FOLLOWER_SUGGESTIONS = gql`
-  query GetFollowerSuggestions {
-    followerSuggestions {
-      id
-      username
-      fullName
-      userBio
-      email
-      image
-      profileImage
-      isFollowing
-      createdAt
-    }
-  }
-`;
-
 export const GET_USER_FOLLOWERS = gql`
   query GetUserFollowers($userId: Int!) {
     user(id: $userId) {

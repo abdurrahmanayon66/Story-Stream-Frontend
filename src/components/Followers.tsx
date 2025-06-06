@@ -1,10 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { useFollowerSuggestions } from "../hooks/userHooks";
+import { useFollowerSuggestions, useToggleFollow } from "../hooks/followHooks";
 import { User } from "@/types/userType";
 
 const Followers = () => {
-  const { data: suggestions, isLoading, error } = useFollowerSuggestions();
+  const { data: suggestionsData, isLoading, error } = useFollowerSuggestions();
+  const toggleFollowMutation = useToggleFollow();
+
+  const [suggestions, setSuggestions] = useState<User[]>([]);
+
+  useEffect(() => {
+    if (suggestionsData) {
+      setSuggestions(suggestionsData);
+    }
+  }, [suggestionsData]);
+
+  const handleFollowClick = (userId: number) => {
+    setSuggestions((prev) =>
+      prev.map((user) =>
+        user.id === userId
+          ? { ...user, isFollowing: !user.isFollowing }
+          : user
+      )
+    );
+
+    const originalStatus = suggestions.find((user) => user.id === userId)?.isFollowing;
+
+    toggleFollowMutation.mutate(
+      { followerId: userId },
+      {
+        onError: () => {
+          // Revert the UI on error
+          setSuggestions((prev) =>
+            prev.map((user) =>
+              user.id === userId
+                ? { ...user, isFollowing: originalStatus }
+                : user
+            )
+          );
+        },
+      }
+    );
+  };
 
   if (isLoading) {
     return (
@@ -41,46 +78,39 @@ const Followers = () => {
     <div>
       <h1 className="text-gray-800 font-bold">Who to follow</h1>
       <div className="grid grid-rows gap-y-4 my-4">
-        {suggestions?.map((user: User) => (
+        {suggestions?.map((user) => (
           <div key={user.id} className="flex justify-between w-full">
             <div className="flex gap-x-2 items-center">
+              <Image
+                src={
+                  user?.image
+                    ? `data:image/jpeg;base64,${user.image}`
+                    : user?.profileImage || "https://github.com/shadcn.png"
+                }
+                alt={user.username}
+                width={40}
+                height={40}
+                className="md:w-[40px] md:h-[40px] object-cover rounded-full"
+              />
               <div>
-                <Image
-                  src={
-                    user?.image
-                      ? `data:image/jpeg;base64,${user?.image}`
-                      : user?.profileImage ||
-                        "https://github.com/shadcn.png"
-                  }
-                  alt={user?.username}
-                  width={40}
-                  height={40}
-                  className="md:w-[40px] md:h-[40px] object-cover rounded-full"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://github.com/shadcn.png";
-                  }}
-                />
-              </div>
-              <div className="">
                 <h2 className="text-sm text-gray-800 font-medium line-clamp-1">
-                  {user?.fullName}
+                  {user.fullName}
                 </h2>
                 <h3 className="text-xs text-gray-600 font-light line-clamp-1">
-                  @{user?.username}
+                  @{user.username}
                 </h3>
               </div>
             </div>
-            <div>
-              <button
-                className={`px-2 py-1 rounded-lg text-sm ${
-                  user?.isFollowing
-                    ? "bg-gray-200 text-gray-800"
-                    : "bg-customPurple text-white"
-                }`}
-              >
-                {user?.isFollowing ? "Following" : "Follow"}
-              </button>
-            </div>
+            <button
+              onClick={() => handleFollowClick(user.id)}
+              className={`px-2 py-1 rounded-lg text-sm ${
+                user.isFollowing
+                  ? "bg-gray-200 text-gray-800"
+                  : "bg-customPurple text-white"
+              }`}
+            >
+              {user.isFollowing ? "Following" : "Follow"}
+            </button>
           </div>
         ))}
       </div>
