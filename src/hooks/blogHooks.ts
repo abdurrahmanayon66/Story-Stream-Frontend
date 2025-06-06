@@ -1,48 +1,65 @@
 import { useQuery } from "@tanstack/react-query";
 import { GraphQLClient } from "graphql-request";
-import { GET_BLOGS, GET_BLOG_BY_ID, GET_FOR_YOU_BLOGS } from "../graphql/blogQueries";
+import * as blogQueries from "../graphql/blogQueries";
 import { useAuthenticatedGraphqlClient } from "../utils/authClient";
-import { useTabStore } from "../stores/tabStore"; 
+import { useTabStore } from "../stores/tabStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-// Unified fetch function that handles all query types
-const fetchBlogs = async (client: GraphQLClient, queryName: string) => {
+const fetchBlogs = async (client: GraphQLClient, tab: string) => {
   let query;
-  
-  switch(queryName) {
-    case "GET_FOR_YOU_BLOGS":
-      query = GET_FOR_YOU_BLOGS;
+
+  switch (tab) {
+    case "For You":
+      query = blogQueries?.GET_FOR_YOU_BLOGS;
       break;
-    case "GET_BLOGS":
+    // case "Following":
+    //   query = blogQueries?.GET_FOLLOWING_BLOGS;
+    //   break;
+    // case "Trending":
+    //   query = blogQueries?.GET_TRENDING_BLOGS;
+    //   break;
+    case "Most Liked":
+      query = blogQueries?.GET_MOST_LIKED_BLOGS;
+      break;
+    case "My Blogs":
+      query = blogQueries?.GET_MY_BLOGS;
+      break;
+    case "Latest":
     default:
-      query = GET_BLOGS;
+      query = blogQueries?.GET_BLOGS;
       break;
-    // Add more cases as you implement other queries
   }
 
   const data = await client.request(query);
-  return data.blogs || data.forYouBlogs?.blogs || []; // Handle different response structures
+  return (
+    data.blogs || 
+    data.forYouBlogs || 
+    data.mostLikedBlogs ||
+    data.followingBlogs || 
+    data.trendingBlogs || 
+    data.myBlogs || 
+    []
+  );
 };
 
-const fetchBlogById = async (client: GraphQLClient, id: number) => {
-  const data = await client.request(GET_BLOG_BY_ID, { id });
-  return data.blog;
-};
-
-// Single hook for all blog listings
 export const useBlogs = () => {
   const getClient = useAuthenticatedGraphqlClient();
-  const { getActiveResolver } = useTabStore();
-  
+  const { activeTab } = useTabStore();
+
   return useQuery({
-    queryKey: ["blogs", getActiveResolver()], // Include resolver in query key
+    queryKey: ["blogs", activeTab],
     queryFn: async () => {
       const client = getClient(new GraphQLClient(API_URL));
-      return fetchBlogs(client, getActiveResolver());
+      return fetchBlogs(client, activeTab);
     },
     staleTime: 1000 * 60 * 5,
   });
+};
+
+const fetchBlogById = async (client: GraphQLClient, id: number) => {
+  const data = await client.request(blogQueries?.GET_BLOG_BY_ID, { id });
+  return data.blog;
 };
 
 export const useBlog = (id: number) => {

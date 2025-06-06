@@ -1,33 +1,28 @@
 import { create } from "zustand";
 
 export type TabType =
+  | "Latest"
   | "For You"
   | "Following"
   | "Trending"
-  | "Latest"
   | "Most Liked"
   | "My Blogs";
+
+export const tabs: TabType[] = [
+  "Latest",
+  "For You",
+  "Following",
+  "Trending",
+  "Most Liked",
+  "My Blogs",
+];
 
 type TabState = {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
-  getActiveResolver: () => string;
 };
 
-const resolverMap: Record<TabType, string> = {
-  "For You": "GET_FOR_YOU_BLOGS", 
-  "Following": "followingBlogs",
-  "Trending": "blogs",
-  "Latest": "GET_BLOGS",
-  "Most Liked": "blogs",
-  "My Blogs": "blogsByGenres",
-};
-
-export const useTabStore = create<TabState>()((set, get) => ({
-  activeTab: "For You",
+export const useTabStore = create<TabState>()((set) => ({
+  activeTab: "Latest",
   setActiveTab: (tab) => set({ activeTab: tab }),
-  getActiveResolver: () => {
-    const tab = get().activeTab;
-    return resolverMap[tab];
-  },
 }));
