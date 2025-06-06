@@ -1,80 +1,82 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+"use client";
+import { useState, useEffect } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface LoginFormProps {
   className?: string;
 }
 
 export default function LoginForm({ className }: LoginFormProps) {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [credentialLoading, setCredentialLoading] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const router = useRouter();
   const { data: session, status } = useSession();
 
- const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  if (loading) return;
-  setLoading(true);
+  const handleCredentialsSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    if (credentialLoading) return;
+    setCredentialLoading(true);
 
-  try {
-    await signOut({ redirect: false });
-    
-    // Small delay to ensure session is fully cleared
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const result = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      await signOut({ redirect: false });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
 
-    if (result?.error) throw new Error(result.error);
-    if (!result?.ok) throw new Error('Login failed: Invalid credentials');
-    
-    toast.success('Login successful!');
-    router.push('/my-feed');
-  } catch (error: any) {
-    toast.error(error.message);
-    setLoading(false);
-  }
-};
+      if (result?.error) throw new Error(result.error);
+      if (!result?.ok) throw new Error("Login failed: Invalid credentials");
 
-const handleGoogleSignIn = async () => {
-  if (loading) return;
-  setLoading(true);
+      toast.success("Login successful!");
+      router.push("/my-feed");
+    } catch (error: any) {
+      toast.error(error.message);
+      setCredentialLoading(false);
+    }
+  };
 
-  try {
-    // Clear any existing session before signing in
-    await signOut({ redirect: false });
-    
-    // Small delay to ensure session is fully cleared
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const result = await signIn('google', { 
-      redirect: false,
-      callbackUrl: '/my-feed' 
-    });
-    
-    if (result?.error) throw new Error(result.error);
-    if (!result?.ok) throw new Error('Google login failed: Invalid response from server');
-    
-    toast.success('Google login successful!');
-    router.push('/my-feed');
-  } catch (error: any) {
-    setLoading(false);
-  }
-};
+  const handleGoogleSignIn = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    try {
+      await signOut({ redirect: false });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const result = await signIn("google", {
+        redirect: false,
+        callbackUrl: "/my-feed",
+      });
+
+      if (result?.error) throw new Error(result.error);
+      if (!result?.ok)
+        throw new Error("Google login failed: Invalid response from server");
+
+      toast.success("Google login successful!");
+      router.push("/my-feed");
+    } catch (error: any) {
+      setGoogleLoading(false);
+    }
+  };
 
   return (
-    <div className={`bg-white p-8 rounded-2xl shadow-lg w-full max-w-md ${className}`}>
-      <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">Sign In</h2>
+    <div className={`bg-white p-8 rounded-2xl w-full max-w-md ${className}`}>
+      <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">
+        Login
+      </h2>
       <form onSubmit={handleCredentialsSubmit} className="space-y-5">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
             Email
           </label>
           <input
@@ -84,11 +86,14 @@ const handleGoogleSignIn = async () => {
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             required
-            disabled={loading}
+            disabled={credentialLoading || googleLoading}
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700"
+          >
             Password
           </label>
           <input
@@ -98,23 +103,26 @@ const handleGoogleSignIn = async () => {
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             required
-            disabled={loading}
+            disabled={credentialLoading || googleLoading}
           />
         </div>
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400"
-          disabled={loading}
+          disabled={credentialLoading || googleLoading}
         >
-          {loading ? 'Signing In...' : 'Sign In with Email'}
+          {credentialLoading ? "Loading" : "Log In"}
         </button>
       </form>
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">or continue with</p>
+      <div className="relative flex flex-col items-center my-8">
+        <hr className="text-slate-300 h-[1.5px] w-full" />
+        <p className="text-sm text-gray-500 bg-white absolute top-[-11] px-4">OR</p>
+      </div>
+      <div className="text-center">
         <button
           onClick={handleGoogleSignIn}
-          className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 py-2 rounded-lg hover:bg-gray-200 transition disabled:bg-gray-50"
-          disabled={loading}
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-100 hover:cursor-pointer text-gray-800 py-2 rounded-lg hover:bg-gray-200 transition disabled:bg-gray-50"
+          disabled={credentialLoading || googleLoading}
         >
           <svg className="w-5 h-5" viewBox="0 0 48 48">
             <path
@@ -134,7 +142,7 @@ const handleGoogleSignIn = async () => {
               d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
             />
           </svg>
-          {loading ? 'Processing...' : 'Sign in with Google'}
+          {googleLoading ? "Processing..." : "Continue with Google"}
         </button>
       </div>
     </div>

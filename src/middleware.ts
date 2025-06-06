@@ -10,26 +10,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/home', request.url));
   }
 
-  if (pathname === '/auth') {
-    try {
-      const response = await fetch(`${origin}/api/check-session`, {
-        method: 'GET',
-        headers: {
-          cookie: request.headers.get('cookie') || '',
-        },
-      });
-      const data = await response.json();
-
-      if (data.isAuthenticated) {
-        return NextResponse.redirect(new URL('/my-feed', request.url));
-      }
-
-      return NextResponse.next();
-    } catch {
-      return NextResponse.next();
-    }
-  }
-
   if (protectedRoutes.includes(pathname)) {
     try {
       const response = await fetch(`${origin}/api/check-session`, {

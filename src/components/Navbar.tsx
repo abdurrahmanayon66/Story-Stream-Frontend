@@ -13,15 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AiOutlineBell } from "react-icons/ai";
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  image: string | null;         
-  profileImage: string | null;   
-  createdAt: string;
-}
+import { User } from "@/types/user";
 
 interface SessionResponse {
   isAuthenticated: boolean;

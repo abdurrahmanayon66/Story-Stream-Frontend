@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useRef, useLayoutEffect, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTabStore, TabType } from "../stores/tabStore";
 
 const tabs = [
   "For You",
@@ -8,63 +9,73 @@ const tabs = [
   "Trending",
   "Latest",
   "Most Liked",
-  "Explore",
+  "My Blogs",
 ] as const;
 
-type TabType = (typeof tabs)[number];
-
 const Tab: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("For You");
+  const { activeTab, setActiveTab } = useTabStore();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [underlineProps, setUnderlineProps] = useState({ left: 0, width: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [underlineStyle, setUnderlineStyle] = React.useState({
+    left: 0,
+    width: 0,
+  });
 
   useLayoutEffect(() => {
     const index = tabs.indexOf(activeTab);
     const currentTab = tabRefs.current[index];
-
     if (currentTab && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
       const tabRect = currentTab.getBoundingClientRect();
 
-      const scrollLeft = containerRef.current.scrollLeft;
-
-      setUnderlineProps({
-        left: tabRect.left - containerRect.left + scrollLeft,
+      setUnderlineStyle({
+        left:
+          tabRect.left - containerRect.left + containerRef.current.scrollLeft,
         width: tabRect.width,
       });
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    console.log("activeTab changed:", activeTab);
+  }, [activeTab]);
+
+  const handleClick = (tab: TabType) => {
+    setActiveTab(tab);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <div
         ref={containerRef}
-        className="flex space-x-8 overflow-x-auto no-scrollbar relative"
+        className="flex space-x-8 overflow-x-auto pb-4 relative"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {tabs.map((tab, index) => (
           <button
             key={tab}
             ref={(el) => (tabRefs.current[index] = el)}
-            onClick={() => setActiveTab(tab)}
-            className={`md:text-base text-sm whitespace-nowrap cursor-pointer font-medium transition-colors duration-300 ${
-              activeTab === tab ? "text-purple-600" : "text-gray-800"
-            }`}
+            onClick={() => handleClick(tab)}
+            className={`relative text-sm md:text-base whitespace-nowrap cursor-pointer transition-colors
+              ${
+                activeTab === tab ? "text-black font-semibold" : "text-gray-500"
+              }
+            `}
           >
             {tab}
           </button>
         ))}
-      </div>
 
-      <motion.div
-        className="absolute top-8 bottom-0 h-[3px] rounded-full bg-purple-600"
-        layout
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        animate={{
-          left: underlineProps.left,
-          width: underlineProps.width,
-        }}
-      />
+        <motion.div
+          className="absolute bottom-0 h-[2px] bg-purple-600 rounded-full"
+          initial={false}
+          animate={{
+            left: underlineStyle.left,
+            width: underlineStyle.width,
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
+      </div>
     </div>
   );
 };
