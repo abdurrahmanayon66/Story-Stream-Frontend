@@ -1,17 +1,21 @@
 import { gql } from "graphql-tag";
 
 export const GET_FOLLOWER_SUGGESTIONS = gql`
-  query GetFollowerSuggestions {
-    followerSuggestions {
-      id
-      username
-      fullName
-      userBio
-      email
-      image
-      profileImage
-      isFollowing
-      createdAt
+  query GetFollowerSuggestions($cursor: Int, $limit: Int) {
+    followerSuggestions(cursor: $cursor, limit: $limit) {
+      users {
+        id
+        username
+        fullName
+        userBio
+        email
+        image
+        profileImage
+        isFollowing
+        createdAt
+      }
+      nextCursor
+      hasMore
     }
   }
 `;
