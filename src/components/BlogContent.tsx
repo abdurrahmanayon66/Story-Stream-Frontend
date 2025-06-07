@@ -2,21 +2,18 @@
 import React from "react";
 import Image from "next/image";
 import Tag from "./Tag";
-import { usePathname } from "next/navigation";
 import { useBlog } from "../hooks/blogHooks";
 import { formatDate } from "../utils/dateFormat";
+import { BlogId } from "@/types/blogId";
 
-const BlogContent = () => {
-  const pathname = usePathname();
-  const blogId = parseInt(pathname?.split("/")[2]);
-
+const BlogContent: React.FC<BlogId> = ({ blogId }) => {
   const { data: blog, isLoading, isError } = useBlog(blogId);
 
   if (isLoading) return <p>Loading blog...</p>;
   if (isError || !blog) return <p>Failed to load blog.</p>;
 
   return (
-    <div className="bg-white px-4 py-4 rounded-lg">
+    <div>
       <div>
         <Image
           src={`data:image/jpeg;base64,${blog?.image}`}

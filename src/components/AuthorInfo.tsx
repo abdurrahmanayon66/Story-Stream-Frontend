@@ -1,7 +1,8 @@
+import { BlogId } from "@/types/blogId";
 import Image from "next/image";
 import React from "react";
 
-const AuthorInfo = () => {
+const AuthorInfo: React.FC<BlogId> = ({ blogId }) => {
   return (
     <div>
       <h1 className="text-gray-800 font-bold">Author</h1>
