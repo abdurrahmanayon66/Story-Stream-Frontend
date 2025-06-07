@@ -2,7 +2,7 @@ import Image from "next/image";
 import React from "react";
 import { CiBookmark, CiChat1, CiHeart } from "react-icons/ci";
 
-const RecommendationBlogs = () => {
+const RecommendationBlogs = ({ blogId }) => {
   return (
     <div>
       <h1 className="text-gray-800 font-bold">Who to follow</h1>
