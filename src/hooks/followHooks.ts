@@ -1,25 +1,50 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { GraphQLClient } from "graphql-request";
 import * as followQueries from "../graphql/followQueries";
 import { useAuthenticatedGraphqlClient } from "../utils/authClient";
+import { useSession } from "next-auth/react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
-const fetchFollowSuggestions = async (client: GraphQLClient) => {
-  const data = await client.request(followQueries.GET_FOLLOWER_SUGGESTIONS);
-  return data.followerSuggestions || [];
+const fetchFollowSuggestions = async (
+  client: GraphQLClient,
+  cursor?: number
+) => {
+  const data = await client.request(followQueries.GET_FOLLOWER_SUGGESTIONS, {
+    cursor,
+    limit: 5,
+  });
+  return data.followerSuggestions || { users: [], nextCursor: null };
 };
 
-export const useFollowerSuggestions = () => {
+// New infinite query hook
+export const useInfiniteFollowerSuggestions = () => {
+  const { status } = useSession();
   const getClient = useAuthenticatedGraphqlClient();
 
-  return useQuery({
-    queryKey: ["followSuggestions"],
-    queryFn: async () => {
+  return useInfiniteQuery({
+    queryKey: ["infiniteFollowSuggestions"],
+    queryFn: async ({ pageParam = null }) => {
       const client = getClient(new GraphQLClient(API_URL));
-      return fetchFollowSuggestions(client);
+      const result = await fetchFollowSuggestions(client, pageParam);
+      return result.users || [];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page has less than 5 items, there are no more pages
+      if (lastPage.length < 5) {
+        return undefined;
+      }
+      // Use the last user's id as the cursor for the next page
+      return lastPage[lastPage.length - 1]?.id || undefined;
+    },
+    staleTime: 1000 * 60 * 5,
+    initialPageParam: null,
+    enabled: status === "authenticated",
   });
 };
 
@@ -35,7 +60,9 @@ export const useToggleFollow = () => {
       return client.request(followQueries.TOGGLE_FOLLOW, { followerId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["followSuggestions"]);
-    }
+      queryClient.invalidateQueries({
+        queryKey: ["infiniteFollowSuggestions"],
+      });
+    },
   });
 };
