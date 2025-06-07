@@ -20,7 +20,7 @@ const CommentSection:React.FC<BlogId> = ({ blogId }) => {
       </div>
       <CommentInputField blogId={1} />
      <div className="my-10 space-y-4">
-      <hr className="max-w-[600px] border-t-2 border-gray-200" />
+      <hr className="max-w-[700px] border-t-2 border-gray-200 mb-10" />
        <CommentCard />
      </div>
     </div>

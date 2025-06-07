@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { BlogId } from "@/types/blogId";
+import { useCreateComment } from "../hooks/commentHooks"; 
 
 const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -13,9 +14,10 @@ const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
   const content = watch("content");
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const { mutate: createComment, isLoading } = useCreateComment();
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-
     if (isFocused) {
       timeoutId = setTimeout(() => setShowButton(true), 300);
     } else {
@@ -30,9 +32,13 @@ const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
       blogId,
       content: data.content,
     };
-    console.log(payload);
-    reset();
-    setIsFocused(false);
+
+    createComment(payload, {
+      onSuccess: () => {
+        reset(); // Clear form field
+        setIsFocused(false); // Collapse input field
+      },
+    });
   };
 
   const handleBlur = () => {
@@ -42,10 +48,7 @@ const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="w-full max-w-[600px]"
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[700px]">
       <motion.div className="border w-full border-none font-medium bg-gray-100 rounded-md p-2">
         <motion.textarea
           {...register("content", { required: true })}
@@ -66,14 +69,14 @@ const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
             <div className="flex justify-end mt-4 px-2">
               <motion.button
                 type="submit"
-                disabled={!content.trim()}
+                disabled={!content.trim() || isLoading}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
-                className=" bg-blue-500 text-white px-4 py-1 rounded-md text-sm disabled:opacity-50"
+                className="bg-blue-500 text-white px-4 py-1 rounded-md text-sm disabled:opacity-50"
               >
-                Comment
+                {isLoading ? "Commenting..." : "Comment"}
               </motion.button>
             </div>
           )}

@@ -1,41 +1,90 @@
-import { Pi } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import React from "react";
-import { PiChatCircleLight, PiHeartStraight } from "react-icons/pi";
+import {
+  PiChatCircleLight,
+  PiDotsThreeOutlineFill,
+  PiHeartStraight,
+} from "react-icons/pi";
 
 const CommentCard = () => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        setShowTooltip(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 max-w-[700px]">
       <section>
-        <div className="flex gap-x-3">
+        <div className="flex gap-x-3 relative">
+          {/* Three dots + Tooltip */}
+          <div className="absolute top-0 right-0">
+            <button
+              onClick={() => setShowTooltip((prev) => !prev)}
+              type="button"
+              className="p-1 rounded-full hover:bg-gray-200"
+            >
+              <PiDotsThreeOutlineFill />
+            </button>
+
+            {/* Tooltip container */}
+            <div
+              ref={tooltipRef}
+              className={`absolute z-10 mt-2 inline-block text-sm font-medium shadow-lg text-white bg-pink-500 rounded-lg transition-opacity duration-200 ${
+                showTooltip ? "visible opacity-100" : "invisible opacity-0"
+              } px-3 py-2 top-5 left-[-20]`}
+            >
+              <button className="font-semibold">
+                Delete
+              </button>
+              {/* Tooltip arrow */}
+              <div
+                className="absolute tooltip-arrow left-7 -top-1 w-2 h-2 bg-pink-500 rotate-45"
+                data-popper-arrow
+              ></div>
+            </div>
+          </div>
+
+          {/* Avatar */}
           <div>
             <Image
-              src={"https://github.com/shadcn.png"}
-              alt="123"
+              src="https://github.com/shadcn.png"
+              alt="avatar"
               width={80}
               height={80}
               className="md:w-[40px] md:h-[40px] object-cover rounded-full"
             />
           </div>
+
+          {/* Author Info */}
           <div className="grid grid-rows-2 text-sm">
             <span className="text-gray-700 font-medium">Abdur Rahman Ayon</span>
             <span className="text-gray-700 text-xs">2 days ago</span>
           </div>
         </div>
       </section>
+
+      {/* Comment content */}
       <section>
         <p>
           Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quae fuga
-          soluta, odio velit deserunt sint impedit nihil beatae quam, maxime,
-          molestias iusto ratione incidunt qui natus. Quibusdam consequuntur
-          porro distinctio! Necessitatibus itaque hic blanditiis earum provident
-          voluptatem eaque pariatur, assumenda, consectetur aperiam voluptates
-          consequatur? Voluptates, numquam suscipit blanditiis quam deleniti
-          magni eveniet veniam quidem maiores similique omnis tempore, rerum
-          velit!
+          soluta...
         </p>
       </section>
-      <section className="flex gap-x-6 text-gray-500 text-sm">
+
+      {/* Footer icons */}
+      <section className="flex gap-x-6 text-gray-500 text-sm mt-4">
         <div className="flex gap-x-1 items-center">
           <span className="hover:cursor-pointer"><PiHeartStraight /></span>
           <span>2</span>
@@ -44,7 +93,9 @@ const CommentCard = () => {
           <span><PiChatCircleLight /></span>
           <span>3 replies</span>
         </div>
-        <div><button className="text-gray-800 hover:cursor-pointer">Reply</button></div>
+        <div>
+          <button className="text-gray-800 hover:cursor-pointer">Reply</button>
+        </div>
       </section>
     </div>
   );
