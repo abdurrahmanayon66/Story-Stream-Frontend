@@ -15,12 +15,22 @@ export default function MainLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const protectedRoutes = [
+  const protectedRoutePatterns = [
     '/create-blog',
     '/my-feed',
     '/blogs',
-    '/profile'
+    '/profile',
+    /^\/blogs\/\d+\/[\w-]+$/,
   ];
+
+  const isProtectedRoute = (path: string) => {
+    return protectedRoutePatterns.some(pattern => {
+      if (pattern instanceof RegExp) {
+        return pattern.test(path);
+      }
+      return path.startsWith(pattern);
+    });
+  };
 
   useEffect(() => {
     const checkSession = async () => {
@@ -28,16 +38,14 @@ export default function MainLayout({
         const response = await fetch('/api/check-session');
         const data = await response.json();
 
-        if (!data.isAuthenticated && protectedRoutes.includes(pathname)) {
+        if (!data.isAuthenticated && isProtectedRoute(pathname)) {
           router.push('/auth?session=invalid');
-          return;
         }
 
         setIsAuthenticated(data.isAuthenticated);
       } catch (error) {
-        if (protectedRoutes.includes(pathname)) {
+        if (isProtectedRoute(pathname)) {
           router.push('/auth?session=error');
-          return;
         }
       } finally {
         setIsLoading(false);
@@ -47,7 +55,7 @@ export default function MainLayout({
     checkSession();
   }, [pathname, router]);
 
-  if (isLoading) {
+  if (isLoading && !isAuthenticated) {
     return <Loading />;
   }
 
