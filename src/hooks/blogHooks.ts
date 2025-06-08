@@ -3,8 +3,26 @@ import { GraphQLClient } from "graphql-request";
 import * as blogQueries from "../graphql/blogQueries";
 import { useAuthenticatedGraphqlClient } from "../utils/authClient";
 import { useTabStore } from "../stores/tabStore";
+import { User } from "@/types/userType";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+interface BlogResponse {
+  blogs?: any[];
+  forYouBlogs?: any[];
+  mostLikedBlogs?: any[];
+  followingBlogs?: any[];
+  trendingBlogs?: any[];
+  myBlogs?: any[];
+}
+
+interface BlogByIdResponse {
+  blog: any;
+}
+
+interface AuthorByBlogIdResponse {
+  authorByBlogId: User;
+}
 
 const fetchBlogs = async (client: GraphQLClient, tab: string) => {
   let query;
@@ -31,7 +49,7 @@ const fetchBlogs = async (client: GraphQLClient, tab: string) => {
       break;
   }
 
-  const data = await client.request(query);
+  const data = await client.request<BlogResponse>(query);
   return (
     data.blogs || 
     data.forYouBlogs || 
@@ -58,7 +76,7 @@ export const useBlogs = () => {
 };
 
 const fetchBlogById = async (client: GraphQLClient, id: number) => {
-  const data = await client.request(blogQueries?.GET_BLOG_BY_ID, { id });
+  const data = await client.request<BlogByIdResponse>(blogQueries?.GET_BLOG_BY_ID, { id });
   return data.blog;
 };
 
@@ -71,5 +89,25 @@ export const useBlog = (id: number) => {
       return fetchBlogById(client, id);
     },
     enabled: !!id,
+  });
+};
+
+const fetchAuthorByBlogId = async (client: GraphQLClient, blogId: number) => {
+  const data = await client.request<AuthorByBlogIdResponse>(
+    blogQueries?.GET_AUTHOR_BY_BLOG_ID,
+    { blogId }
+  );
+  return data.authorByBlogId;
+};
+
+export const useAuthorByBlogId = (blogId: number) => {
+  const getClient = useAuthenticatedGraphqlClient();
+  return useQuery({
+    queryKey: ["author", "blog", blogId],
+    queryFn: async () => {
+      const client = getClient(new GraphQLClient(API_URL));
+      return fetchAuthorByBlogId(client, blogId);
+    },
+    enabled: !!blogId,
   });
 };

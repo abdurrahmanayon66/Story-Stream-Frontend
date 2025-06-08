@@ -35,8 +35,8 @@ const CommentInputField: React.FC<BlogId> = ({ blogId }) => {
 
     createComment(payload, {
       onSuccess: () => {
-        reset(); // Clear form field
-        setIsFocused(false); // Collapse input field
+        reset(); 
+        setIsFocused(false); 
       },
     });
   };

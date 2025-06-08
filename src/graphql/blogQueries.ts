@@ -1,4 +1,5 @@
 import { gql } from "graphql-tag";
+import { User } from "@/types/userType";
 
 export const GET_BLOGS = gql`
   query GetBlogs {
@@ -134,3 +135,28 @@ export const GET_BLOG_BY_ID = gql`
     }
   }
 `;
+
+export const GET_AUTHOR_BY_BLOG_ID = gql`
+  query GetAuthorByBlogId($blogId: Int!) {
+    authorByBlogId(blogId: $blogId) {
+      id
+      username
+      fullName
+      email
+      image
+      profileImage
+      userBio
+      createdAt
+      followerCount
+      followingCount
+    }
+  }
+`;
+
+export interface GetAuthorByBlogIdVariables {
+  blogId: number;
+}
+
+export interface GetAuthorByBlogIdResponse {
+  authorByBlogId: User;
+}

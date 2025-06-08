@@ -1,5 +1,5 @@
 import { Blog } from "./blogType";
-import { CommentLike } from "./commentLike";
+import { CommentLike } from "./commentLikeType";
 import { User } from "./userType";
 
 export interface Comment {
@@ -9,6 +9,9 @@ export interface Comment {
   userId: number;
   parentCommentId?: number;
   createdAt: string;
+  likeCount?: number;
+  hasLiked?: boolean;
+  replyCount?: number;
   user?: User;
   blog?: Blog;
   parentComment?: Comment;
