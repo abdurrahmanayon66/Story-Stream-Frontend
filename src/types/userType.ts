@@ -9,4 +9,6 @@ export interface User {
   profileImage: string | null;
   createdAt: string;
   isFollowing: boolean;
+  followerCount: number | 0;
+  followingCount: number | 0;
 }

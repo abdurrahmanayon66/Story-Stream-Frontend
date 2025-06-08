@@ -1,6 +1,8 @@
 import { gql } from "@apollo/client";
+import { Comment } from "@/types/commentType";
+import { User } from "@/types/userType";
 
-// Fragment for Comment fields
+// Fragment that matches your resolver structure
 export const COMMENT_FRAGMENT = gql`
   fragment CommentFields on Comment {
     id
@@ -9,92 +11,24 @@ export const COMMENT_FRAGMENT = gql`
     userId
     parentCommentId
     createdAt
-    likeCount # ✅ new
-    hasLiked # ✅ new
+    likeCount
+    hasLiked
+    replyCount
     user {
       id
       username
       image
       profileImage
-    }
-    blog {
-      id
-    }
-    parentComment {
-      id
-      content
-      userId
-      createdAt
-      user {
-        id
-        username
-        image
-        profileImage
-      }
-    }
-  }
-`;
-
-// Fragment for nested replies
-export const COMMENT_WITH_REPLIES_FRAGMENT = gql`
-  fragment CommentWithReplies on Comment {
-    id
-    content
-    blogId
-    userId
-    parentCommentId
-    createdAt
-    user {
-      id
-      username
-      email
-      image
-      profileImage
-    }
-    blog {
-      id
-      title
-      content
-      image
-    }
-    parentComment {
-      id
-      content
-      userId
-      createdAt
-      user {
-        id
-        username
-        image
-        profileImage
-      }
     }
     replies {
       id
       content
+      blogId
       userId
       parentCommentId
       createdAt
-      user {
-        id
-        username
-        image
-        profileImage
-      }
-      likes {
-        id
-        userId
-        user {
-          id
-          username
-        }
-      }
-    }
-    likes {
-      id
-      commentId
-      userId
-      createdAt
+      likeCount
+      hasLiked
       user {
         id
         username
@@ -109,52 +43,10 @@ export const COMMENT_WITH_REPLIES_FRAGMENT = gql`
 export const GET_COMMENTS_BY_BLOG_ID = gql`
   query GetCommentsByBlogId($blogId: Int!) {
     commentsByBlogId(blogId: $blogId) {
-      ...CommentWithReplies
+      ...CommentFields
     }
   }
-  ${COMMENT_WITH_REPLIES_FRAGMENT}
-`;
-
-// Simple version without nested data
-export const GET_COMMENTS_BY_BLOG_ID_SIMPLE = gql`
-  query GetCommentsByBlogIdSimple($blogId: Int!) {
-    commentsByBlogId(blogId: $blogId) {
-      id
-      content
-      blogId
-      userId
-      parentCommentId
-      createdAt
-    }
-  }
-`;
-
-// Version with user data only
-export const GET_COMMENTS_BY_BLOG_ID_WITH_USERS = gql`
-  query GetCommentsByBlogIdWithUsers($blogId: Int!) {
-    commentsByBlogId(blogId: $blogId) {
-      id
-      content
-      blogId
-      userId
-      parentCommentId
-      createdAt
-      user {
-        id
-        username
-        image
-        profileImage
-      }
-      likes {
-        id
-        userId
-        user {
-          id
-          username
-        }
-      }
-    }
-  }
+  ${COMMENT_FRAGMENT}
 `;
 
 // MUTATIONS
@@ -169,30 +61,15 @@ export const CREATE_COMMENT = gql`
       content: $content
       parentCommentId: $parentCommentId
     ) {
-      ...CommentFields
-    }
-  }
-  ${COMMENT_FRAGMENT}
-`;
-
-// Simple create comment without nested data
-export const CREATE_COMMENT_SIMPLE = gql`
-  mutation CreateCommentSimple(
-    $blogId: Int!
-    $content: String!
-    $parentCommentId: Int
-  ) {
-    createComment(
-      blogId: $blogId
-      content: $content
-      parentCommentId: $parentCommentId
-    ) {
       id
       content
       blogId
       userId
       parentCommentId
       createdAt
+      likeCount
+      hasLiked
+      replyCount
       user {
         id
         username
@@ -215,7 +92,7 @@ export const TOGGLE_COMMENT_LIKE = gql`
   }
 `;
 
-// QUERY VARIABLES INTERFACES
+// Query variable interfaces
 export interface GetCommentsByBlogIdVariables {
   blogId: number;
 }
@@ -234,7 +111,7 @@ export interface ToggleCommentLikeVariables {
   commentId: number;
 }
 
-// RESPONSE INTERFACES
+// Response interfaces
 export interface GetCommentsByBlogIdResponse {
   commentsByBlogId: Comment[];
 }
